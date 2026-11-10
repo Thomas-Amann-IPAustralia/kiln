@@ -1,0 +1,21 @@
+# Secrets: never committed. Key names live in .env.example.
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.pyright/
+dist/
+build/
+*.egg-info/
+
+# Raw fetched data and stage intermediates are rebuilt, never committed (SOP §16).
+data/raw/
+data/work/
+
+.DS_Store

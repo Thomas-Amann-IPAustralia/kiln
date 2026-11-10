@@ -1,0 +1,66 @@
+# Kiln's environment: the outside services it depends on, and the build phase that first
+# needs each one. Validated by src/kiln/config.py; an unknown key is an error.
+#
+# Only key NAMES live here. Values come from the environment or .env (see .env.example).
+# Where a cloud session's proxy injects a key, the variable can stay unset: `kiln doctor`
+# sends a placeholder and the proxy replaces it.
+#
+# `needed_from_phase` follows docs/charter/build-plan.md. `kiln doctor` exits 2 when a service
+# needed at or before `current_phase` does not answer.
+
+current_phase: 0
+probe_timeout_seconds: 20
+
+services:
+  langfuse:
+    purpose: Tracing and evaluation for every agent (EU cloud region).
+    needed_from_phase: 0
+    probe:
+      base_url: https://cloud.langfuse.com
+      path: /api/public/projects
+      auth: {scheme: basic, env_user: LANGFUSE_PUBLIC_KEY, env_password: LANGFUSE_SECRET_KEY}
+
+  neon:
+    purpose: Postgres for the catalogue, workflow state, findings, project metadata and evidence.
+    needed_from_phase: 0
+    env: [NEON_DATABASE_URL]
+
+  r2:
+    purpose: Object storage for raw source snapshots and evidence artefacts, by hash.
+    needed_from_phase: 0
+    env: [R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET]
+
+  modal:
+    purpose: Disposable sandboxes for generated or untrusted code, with a spend cap per run.
+    needed_from_phase: 0
+    env: [MODAL_TOKEN_ID, MODAL_TOKEN_SECRET]
+
+  openai:
+    purpose: Model provider.
+    needed_from_phase: 1
+    probe:
+      base_url: https://api.openai.com
+      path: /v1/models
+      auth: {scheme: bearer, env: OPENAI_API_KEY}
+
+  gemini:
+    purpose: Model provider, and the second family for judging OpenAI output.
+    needed_from_phase: 1
+    probe:
+      base_url: https://generativelanguage.googleapis.com
+      path: /v1beta/models?pageSize=1
+      auth: {scheme: header, header: x-goog-api-key, env: GEMINI_API_KEY}
+
+  anthropic:
+    purpose: Model provider for the coding swarm and for sophisticated agentic work.
+    needed_from_phase: 1
+    probe:
+      base_url: https://api.anthropic.com
+      path: /v1/models?limit=1
+      auth: {scheme: header, header: x-api-key, env: ANTHROPIC_API_KEY}
+      extra_headers: {anthropic-version: "2023-06-01"}
+
+  brave:
+    purpose: Web search for discovery only; a search result is never evidence.
+    needed_from_phase: 1
+    env: [BRAVE_API_KEY]

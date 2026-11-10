@@ -1,0 +1,13 @@
+# The repo is part of the Council's control plane. Changes to these paths are reviewed by the
+# owner whoever, or whatever, proposes them (docs/charter/agents/security-architect.md).
+
+/.github/                   @Thomas-Amann-IPAustralia
+/.pre-commit-config.yaml    @Thomas-Amann-IPAustralia
+/CLAUDE.md                  @Thomas-Amann-IPAustralia
+/AGENTS.md                  @Thomas-Amann-IPAustralia
+/config/                    @Thomas-Amann-IPAustralia
+/docs/charter/              @Thomas-Amann-IPAustralia
+/docs/adr/                  @Thomas-Amann-IPAustralia
+/docs/repo-seeds/           @Thomas-Amann-IPAustralia
+/pyproject.toml             @Thomas-Amann-IPAustralia
+/uv.lock                    @Thomas-Amann-IPAustralia

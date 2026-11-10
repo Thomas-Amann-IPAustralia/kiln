@@ -1,0 +1,4 @@
+* text=auto eol=lf
+*.sqlite binary
+*.parquet binary
+uv.lock linguist-generated=true
