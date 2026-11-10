@@ -18,6 +18,8 @@ asks for next; nothing that spends money is approved, because no budget is set.
 - **The seeds** are sealed in `docs/repo-seeds/` with a hash manifest.
 - **Code:** `src/kiln/` has the config loader, `kiln doctor` and `kiln records check`, with 42
   tests. CI runs lint, format, pyright, tests, the records check and gitleaks.
+  CI's first run passed both jobs on commit `8f4b596`, which is the first time the gitleaks
+  job ran anywhere (D-001 could not run it in the session).
 - **Not built:** every component of the shared core. The proposed order is
   [`docs/sketches/phase-0-shared-core.md`](sketches/phase-0-shared-core.md).
 - **Reusable pieces:**
@@ -29,20 +31,17 @@ asks for next; nothing that spends money is approved, because no budget is set.
 
 ## Open items
 
-1. **The gitleaks job has not been seen to pass.** This session could not download and run
-   the binary; CI's first run on the pushed branch is its test. Read that run before relying
-   on it (D-001).
-2. **`kiln doctor` checks Neon, R2, Modal and Brave by key name only.** Each gains a live
+1. **`kiln doctor` checks Neon, R2, Modal and Brave by key name only.** Each gains a live
    check with its client, in slice 4 or 6 of the sketch.
-3. **The glossary is a seed, not a grilled glossary.** Expect the grilling session to rename
+2. **The glossary is a seed, not a grilled glossary.** Expect the grilling session to rename
    terms; rename them everywhere in the same commit.
-4. **"Maturity target" in the chair's first slice** conflicts with ADR-0018 and ADR-0023
+3. **"Maturity target" in the chair's first slice** conflicts with ADR-0018 and ADR-0023
    (D-005, F3). Settle the wording when the chair's charter is grilled.
-5. **How the reference build's data expert agent joins Kiln** is not in the seeds. The Data
+4. **How the reference build's data expert agent joins Kiln** is not in the seeds. The Data
    Engineer's charter ranks its source as background only. A question for phase 3.
-6. **The skills setup has not run here.** When Tom runs `/setup-matt-pocock-skills`, it will
+5. **The skills setup has not run here.** When Tom runs `/setup-matt-pocock-skills`, it will
    add an "Agent skills" block to `CLAUDE.md` and write `docs/agents/`; keep both.
-7. **The SOP's Part C was written for one knowledge-base agent.** Each expert's knowledge base
+6. **The SOP's Part C was written for one knowledge-base agent.** Each expert's knowledge base
    should follow it, but the charter's stores differ from the reference build's (D-005, F2).
 
 ## For Tom
