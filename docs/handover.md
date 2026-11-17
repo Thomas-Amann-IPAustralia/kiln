@@ -3,8 +3,10 @@
 For the next Claude Code session. Read [`CLAUDE.md`](../CLAUDE.md) first. Build only what Tom
 asks for next; nothing that spends money is approved, because no budget is set.
 
-**Status (2026-11-17):** phase 0. Kickoff done, reviewed twice, and five recommendations adopted. Recorded in D-001 to D-009, on branch
-`claude/loving-johnson-8yysoc`. No pull request is open; Tom has not asked for one.
+**Status (2026-11-17):** phase 0. Kickoff done, reviewed twice, and five recommendations adopted. Recorded in D-001 to D-009,
+merged to `main` by Tom in pull request #2. `main` is protected by a ruleset Tom added
+(ADR-0028); GitHub reports the branch as protected, but this session cannot read the
+ruleset's settings, so which checks it requires is unverified.
 
 **Next free decision number: D-010**
 
@@ -55,38 +57,32 @@ asks for next; nothing that spends money is approved, because no budget is set.
 
 ## For Tom
 
-You adopted D-007's five recommendations (D-008). **Two things start the next step:**
+You adopted D-007's five recommendations (D-008) and protected `main`. **One thing starts the next step:**
 
 1. **Approve the revised phase 0 sketch,**
    [`docs/sketches/phase-0-shared-core.md`](sketches/phase-0-shared-core.md), as revised in D-009.
    *Recommended: yes.* Approving it starts slice 1 and nothing else. It can be undone: no code
    exists yet. If you do not answer, nothing is built.
-2. **Protect `main` on GitHub** (ADR-0028). Only you can: Settings, then Rules, then Rulesets,
-   then a new branch ruleset for the default branch. Turn on "Require a pull request before
-   merging" with 0 required approvals, and "Require status checks to pass" with both CI jobs,
-   `lint, types, tests, records` and `gitleaks (tripwire 2)`. Also block force pushes and
-   deletions. Leave "Require review from Code Owners" off.
-
 **These can wait.** Nothing is built on them until you answer.
 
-3. **The gate table** in `docs/charter/operating-model.md` was rebuilt from text; four places
+2. **The gate table** in `docs/charter/operating-model.md` was rebuilt from text; four places
    are marked *inferred*. Correct? (D-003)
-4. **The six draft exit tests** in `docs/charter/build-plan.md`: confirm, or send the
+3. **The six draft exit tests** in `docs/charter/build-plan.md`: confirm, or send the
    originals. (D-003)
-5. **Secrets, before the session that needs them:** `NEON_DATABASE_URL`, `R2_BUCKET`,
+4. **Secrets, before the session that needs them:** `NEON_DATABASE_URL`, `R2_BUCKET`,
    `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`; later an Anthropic key and `BRAVE_API_KEY`. (D-004)
-6. **A Langfuse project for Kiln.** The session's keys point at `data-expert-agent`.
+5. **A Langfuse project for Kiln.** The session's keys point at `data-expert-agent`.
    *Recommended: a new one.* (D-005 F1)
-7. **Four design rulings from D-005:** real-world results come back as de-identified
+6. **Four design rulings from D-005:** real-world results come back as de-identified
     aggregates (R2); provenance, not screening, guards tripwire 1 (R4); files are the record
     and Postgres an index (F2); and the reading of the charter's rules on silence (R5).
     *Recommended: yes to each.*
-8. **A budget** for phase 0's cents of sandbox and embedding calls, and an allowance for
+7. **A budget** for phase 0's cents of sandbox and embedding calls, and an allowance for
     exploration. $1.62 of the second-opinion budget is unspent; it is kept for that purpose.
-9. **Evaluation policy:** the SOP chooses models on the test split (§20.5) but says "choose on
+8. **Evaluation policy:** the SOP chooses models on the test split (§20.5) but says "choose on
     dev, report on test" (§12). *Recommended: choose on dev, always.* (D-007)
-10. **The model heuristics** in `CLAUDE.md` are the SOP's table. Still yours?
-11. **How approvals are made unforgeable,** before any loop runs unattended (ADR-0028): a
+9. **The model heuristics** in `CLAUDE.md` are the SOP's table. Still yours?
+10. **How approvals are made unforgeable,** before any loop runs unattended (ADR-0028): a
     separate GitHub identity for agents, or approvals signed with a key that never enters a
     cloud session. *Recommended: decide when the sketch's verifier slice is built.*
 
