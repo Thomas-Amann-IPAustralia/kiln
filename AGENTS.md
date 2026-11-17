@@ -37,6 +37,9 @@ make fix      # apply ruff's fixes and formatting
 make doctor   # is this machine ready for the current phase? Free; spends nothing
 ```
 
+`uv run kiln review SPEC --dry-run` estimates a second opinion for free. `--confirm` spends
+money: never run it without a budget Tom set in `config/kiln.yaml`, which the command enforces.
+
 `make check` must pass before every commit. The pre-commit hooks run the same checks.
 
 ## Conventions

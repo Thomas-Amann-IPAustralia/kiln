@@ -50,7 +50,8 @@ make doctor   # is this machine ready for the current phase? Free; spends nothin
 uv run kiln records check   # do the decision log, ADRs, handover, seeds and links agree?
 ```
 
-No command in this repo spends money yet.
+Only `kiln review --confirm` spends money, and only within a budget Tom has set in
+`config/kiln.yaml`.
 
 ## Licence
 

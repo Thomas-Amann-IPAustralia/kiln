@@ -10,11 +10,12 @@ experts. Tom is the owner and is not a subject-matter expert: the work must stan
 expert's scrutiny without one in the room.
 
 **Current scope: phase 0 of 6 (the shared core). Kickoff is done; nothing in the shared core
-is built yet.** The repo holds the rulebook, the records, the live charter, CI and two free
-commands (`kiln doctor`, `kiln records check`). The next step is the first slice of
+is built yet.** The repo holds the rulebook, the records, the live charter, CI, two free
+commands (`kiln doctor`, `kiln records check`) and one paid one (`kiln review`, a second
+opinion from another provider's model). The next step is the first slice of
 [`docs/sketches/phase-0-shared-core.md`](docs/sketches/phase-0-shared-core.md), once Tom
-approves the sketch. Build each later step when Tom asks for it. No budget is set, so **no
-paid call is approved**.
+approves the sketch. Build each later step when Tom asks for it. The only budget is Tom's $2 for a second
+opinion on the docs ($0.38 spent, D-007); **no other paid call is approved**.
 
 This file is the single source of truth for what is built and what is adopted. Update it in
 the step that changes it.
@@ -127,7 +128,9 @@ The seeds are sealed: never edit a file in `docs/repo-seeds/` except its `README
 | Sketches | `docs/sketches/` | A design proposed for Tom's approval before a major component is built. |
 | Seeds | `docs/repo-seeds/` | Sealed inputs, with a hash manifest. |
 
-`kiln records check` proves these agree, in CI and before each commit. Dates in records are
+`kiln records check` checks that these agree in structure, in CI and before each commit:
+numbering, dates, the index, the seed hashes and links. It cannot check that they agree in
+meaning; a second opinion found two rules that contradict each other (D-007). Dates in records are
 the session's date (UTC). Commit code first, then run it, then commit its outputs, so a run's
 record names a clean commit.
 
@@ -172,7 +175,7 @@ the provider's own page before configuring them.
 
 ## When to stop and ask Tom
 
-- Anything that spends money. No budget is set yet.
+- Anything that spends money beyond a budget Tom set for that purpose.
 - Adopting a recommendation into the charter, an ADR, a default or this file.
 - Amending the charter or an ADR, however clear the improvement looks.
 - A tripwire.

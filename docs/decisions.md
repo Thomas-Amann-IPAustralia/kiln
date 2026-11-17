@@ -317,3 +317,97 @@ a budget (handover, "For Tom" 11).
 line on runtime prompts, a session-specific line in `CLAUDE.md`, and the handover's item 12.
 **For Tom:** handover item 14. The rulebook's restructure waits for his answer, because it
 changes what every later session reads.
+
+## D-007 — A second opinion from OpenAI's model, for $0.38 of $2: five problems Claude's review missed, and three of its recommendations corrected (2026-11-17)
+
+**Context.** Before agreeing or disagreeing with D-006, Tom allowed "up to $2 on OpenAI tokens
+to get a second opinion." D-006 was a self-review, and the charter says independence needs a
+fresh context and another provider (ADR-0026).
+
+**Decision (Claude: the method. The recommendations are for Tom.)**
+
+- **A new paid command, `kiln review`,** with the SOP's money rules in code: a dry run, a
+  required `--confirm`, a budget guard that counts every recorded dollar, and every response
+  cached under its request's hash and committed (`docs/reviews/cache/`).
+- **Three requests to `gpt-6.1-sol` at high effort,** each spec committed before it was sent
+  (`docs/reviews/2026-11-17-docs/`):
+  1. a smoke test on one small file;
+  2. **blind:** the 17 live documents and the SOP as they stood at `b57c335`, before D-006,
+     with Tom's two questions;
+  3. **compare:** the same, plus D-006 and the blind answer.
+
+  Documents were read from git and defanged, and Tom's GitHub handle was redacted.
+- **Rejected:** sending D-006 in the first request, which would have anchored the reviewer
+  on Claude's findings.
+
+**Runs, in order.**
+
+| Request | Input tokens | Output (reasoning) | Cost | Upper bound |
+| --- | --- | --- | --- | --- |
+| 00-smoke | 618 | 38 (0) | $0.0016 | $0.3215 |
+| 01-blind | 54,072 | 6,139 (4,142) | $0.1966 | $0.5035 |
+| 02-compare | 57,994 | 3,600 (2,127) | $0.1810 | $0.5178 |
+
+- **The smoke test found a bucket the code did not price.** OpenAI caches by default and bills
+  a cache write at $2.50 per million tokens, 1.25 times the input rate, instead of the input
+  rate. Fixed before the blind request (`e9b1521`). Unfixed, the blind run would have been
+  recorded at $0.1695, 14% low.
+- **The comparison got no cache hit,** though its first 17 documents matched the blind
+  request's byte for byte. Both paid the write premium for nothing, about $0.056 in all.
+- Real input ran at about 4.1 characters a token (4.05 and 4.07), against the estimate's bound of 3. Each run cost
+  35 to 39% of its bound.
+
+**What the second opinion found that D-006 did not.** Each was checked against the source text.
+
+| | Found | Checked |
+| --- | --- | --- |
+| 1 | A loop can still set its own ticket's `passes` flag, and an `actor: tom` field in a record does not show that Tom approved anything | `coding-swarm.md`, step 5; the sketch's slice 1 |
+| 2 | Phase 0 promises harness controls before agents have tools, but the sketch omits the scanner baseline and defers the credential broker | The sketch names no scanner; the build plan's first move 7 names three |
+| 3 | The charter's rule 11, "Only a tripwire waits for Tom", contradicts the Tom band and the four gates Tom decides | `operating-model.md`, rule 11 |
+| 4 | Rules on spending and authority are in `CLAUDE.md` only, so an agent that reads only `AGENTS.md` (Codex, Cursor) would not get them | `AGENTS.md` had no spending rule |
+| 5 | The SOP chooses models on the test split (§20.5), and also says "choose on dev, report on test" (§12) | Both lines, in the sealed SOP |
+| 6 | `store: false` does not by itself mean zero retention at the provider | The SOP's §23 says it does. So did Claude's own docstring in `kiln review`, corrected in `f24e1c5`. |
+| 7 | Phase 0 builds hosted storage, ingestion and a sandbox before the first useful result, and nothing compares the multi-agent design with a simpler baseline | The sketch's build order |
+
+**Where it corrected D-006.** Each correction is accepted.
+
+- **The rulebook's length was overstated.** Anthropic's target is under 200 lines *per file*.
+  `CLAUDE.md` is 189 and `AGENTS.md` is 77. Duplication is worth cutting, but contradictory and
+  missing rules matter more.
+- **"Enforce, then delete the sentence" goes too far.** Enforcement blocks a forbidden action;
+  a short statement of the boundary helps an agent choose a permitted one. Keep both.
+- **"No new design document until code exists" is too categorical.** Code can implement the
+  wrong policy faithfully. Revising the sketch comes first.
+- **The Interpreter cannot be only a renderer.** It also questions Tom. Rendering approvals
+  should be constrained; its conversation is tested separately.
+
+It also confirmed D-006's correction on CODEOWNERS, with one condition: Tom's merge is the only
+human review **only if Claude never merges**. GitHub cannot tell Claude from Tom on one account.
+
+**A claim neither review had caught, corrected now.** `CLAUDE.md` said `kiln records check`
+"proves these agree". It checks structure: numbering, dates, the index, the seed hashes and
+links. It cannot check meaning, which finding 3 shows.
+
+**Recommendations (Tom decides).** These are the handover's "For Tom" items 1 to 5 and 12.
+
+1. Revise the phase 0 sketch before approving it, with findings 1, 2 and 7.
+2. Fix rule 11 and move the authority and spending rules into `AGENTS.md`, then cut the
+   duplication from `CLAUDE.md`.
+3. Protect `main` with a required pull request and both CI jobs; no required code-owner review;
+   Claude never merges.
+4. Compare a single-session baseline on the three sample briefs before going beyond the chair
+   and the Researcher.
+5. Defer the Interpreter and the Illustrator. Build the decision card, Mermaid diagrams and a
+   one-line friction log now.
+6. Choose on dev, always.
+
+**Checked.** 62 tests pass, 20 of them on `kiln review`, with sockets refused. Each finding
+above was checked against the file it cites. Every request and response is committed.
+
+**Spend:** $0.3792 of Tom's $2 `docs-second-opinion` budget. No failed requests. $1.62 is unspent
+and kept for that purpose.
+
+**Consequences.** Corrected in this entry's commit: `CLAUDE.md` (what is built, the budget, what
+the records check proves), `AGENTS.md` (the paid command and its rule), the README, and the
+handover, whose owner list now leads with the five items that start the next step. **For
+Tom:** handover items 1 to 5. D-006's recommendations stand as amended here.
