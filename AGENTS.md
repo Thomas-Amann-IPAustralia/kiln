@@ -37,7 +37,8 @@ affect:
 
 **No agent ever:**
 
-- merges a pull request, or records an approval in Tom's name (ADR-0028);
+- merges a pull request. A record of Tom's decision takes effect only when he merges it
+  (ADR-0028);
 - sets its own ticket's `passes` flag, or edits `contracts/`, `fitness/` or a ticket's
   verification steps while implementing it (ADR-0027);
 - edits a file in `docs/repo-seeds/` other than its `README.md`;

@@ -3,10 +3,10 @@
 For the next Claude Code session. Read [`CLAUDE.md`](../CLAUDE.md) first. Build only what Tom
 asks for next; nothing that spends money is approved, because no budget is set.
 
-**Status (2026-11-17):** phase 0. Kickoff done, reviewed twice, and five recommendations adopted. Recorded in D-001 to D-008, on branch
+**Status (2026-11-17):** phase 0. Kickoff done, reviewed twice, and five recommendations adopted. Recorded in D-001 to D-009, on branch
 `claude/loving-johnson-8yysoc`. No pull request is open; Tom has not asked for one.
 
-**Next free decision number: D-009**
+**Next free decision number: D-010**
 
 ## Where things stand
 
@@ -58,7 +58,7 @@ asks for next; nothing that spends money is approved, because no budget is set.
 You adopted D-007's five recommendations (D-008). **Two things start the next step:**
 
 1. **Approve the revised phase 0 sketch,**
-   [`docs/sketches/phase-0-shared-core.md`](sketches/phase-0-shared-core.md), once D-009 revises it.
+   [`docs/sketches/phase-0-shared-core.md`](sketches/phase-0-shared-core.md), as revised in D-009.
    *Recommended: yes.* Approving it starts slice 1 and nothing else. It can be undone: no code
    exists yet. If you do not answer, nothing is built.
 2. **Protect `main` on GitHub** (ADR-0028). Only you can: Settings, then Rules, then Rulesets,

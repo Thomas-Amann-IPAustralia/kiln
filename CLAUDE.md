@@ -14,7 +14,7 @@ The repo holds the rulebook, the records, the live charter, CI, two free command
 doctor`, `kiln records check`) and one paid one (`kiln review`, a second opinion from another
 provider's model). The phase 0 sketch,
 [`docs/sketches/phase-0-shared-core.md`](docs/sketches/phase-0-shared-core.md), was revised
-for D-008 and waits for Tom's approval; build slice 1 once he gives it. The only budget is
+for D-008 (D-009) and waits for Tom's approval; build slice 1 once he gives it. The only budget is
 Tom's $2 for a second opinion on the docs ($0.38 spent, D-007); **no other paid call is
 approved**.
 

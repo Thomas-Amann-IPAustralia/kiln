@@ -25,6 +25,22 @@ Agents do not chat with each other. They exchange typed artefacts through the co
 - **The exit.** After G5, production follows the agency's own approval path, with human experts. The assurance case travels with the build.
 - Only a validation node can write a pass, and a tripwire can pause any gate.
 
+> **Changed from the seed (D-009).** The same flow as a diagram (ADR-0030). Like the table, it
+> is a reconstruction for Tom to confirm.
+
+```mermaid
+flowchart LR
+    G0["G0 Intake<br/>Tom sets the question"] --> G1["G1 Applicability"]
+    G1 --> G2["G2 Design<br/>Tom approves the plan"]
+    G2 --> G3["G3 Build"]
+    G3 --> G4["G4 Pre-release<br/>Tom accepts the build"]
+    G4 --> G5["G5 Real-world test<br/>Tom decides what follows"]
+    G3 -. "a finding that would change the plan" .-> G2
+    G5 -. "a new round: the design changed" .-> G2
+    G5 -. "a new round: the question changed" .-> G0
+    G5 ==> P(["Production, through the agency's own approval path"])
+```
+
 Tom sets the question at G0, approves the plan at G2, accepts a test-ready build at G4, and decides what follows at G5. Agents run everything up to the handover; Tom's team runs the real-world test. Build findings send work back to design, test findings can start a new round, and production sits behind expert assessment.
 
 ## The shared core

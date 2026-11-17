@@ -446,3 +446,49 @@ path no agent can use. That choice is Tom's, and it is in the handover.
 
 **Consequences.** Next is D-009: the sketch revised to match, for Tom's approval. Nothing in
 slice 1 is built until then.
+
+## D-009 — The phase 0 sketch revised for D-008, for Tom's approval; and ADR-0028's wording corrected (2026-11-17)
+
+**Context.** D-008 adopted five changes. The first was to revise the phase 0 sketch before Tom
+approves it. The revision is a design for approval, so it is groundwork, not an adoption.
+
+**Decision (groundwork; Tom decides whether to approve the sketch).**
+[`docs/sketches/phase-0-shared-core.md`](sketches/phase-0-shared-core.md) now has nine slices,
+not seven.
+
+- **First useful result before the hosted services.** Slice 6 takes one sample brief through
+  the thin path, with the plan approved by Tom's merge and the pass set by the verifier.
+  Neon, R2, Langfuse and ingestion follow it, as slices 7 and 8.
+- **The harness is tested in phase 0.** Slice 3 puts Semgrep CE, OSV-Scanner and Trivy in CI
+  and generalises `kiln review`'s budget guard into a shared spend ledger. Slice 5's sandbox
+  must refuse a file, a host and a credential it was not given, and stop before its cap.
+- **Slice 4 is new:** tickets and the verifier (ADR-0027). The verifier refuses a commit that
+  edits what judges it, whatever its tests say.
+- **Approvals bind to a version.** An approval is Tom's merge of the commit that holds a
+  decision card. `kiln approvals` will list each approved card with its hash, and flag one
+  edited since (ADR-0028).
+- **The baseline is planned from slice 6.** Its single-session plan is the baseline's first
+  data point, and slice 9 commits the comparison's rule before either path runs (ADR-0029).
+- **Two Mermaid diagrams** show the shape and the slice order. A third draws the reconstructed
+  gate flow in the operating model, beside the table Tom has yet to confirm.
+- **Not designed here:** the real-data tripwire's check, which waits for Tom's ruling on
+  D-005 R4. Until then no dataset enters a build.
+
+**A correction (ADR-0028).** As written in D-008's commit, ADR-0028 said "no agent records an
+approval in Tom's name". Read literally, that forbids the decision log's own practice: D-008
+records Tom's "Yes to all". The ruling was meant, and now reads, that an agent may write down
+what Tom decided, but the record takes effect only when Tom merges it. The ruling is
+unchanged; its wording was Claude's error, corrected before the ADR was merged. `AGENTS.md`
+matches.
+
+**Checked.** `kiln records check` passes. **Not checked:** how the diagrams render. A render
+with Mermaid's own tool was refused by this session's permissions (it would have run a
+downloaded package with the browser's sandbox switched off). The syntax was kept
+conservative instead: every label quoted, each group defined before it is linked, and no
+label that opens with a list number. GitHub renders Mermaid in Markdown files, so Tom sees it
+there.
+
+**Spend:** $0.
+
+**Consequences. For Tom:** approve the sketch (handover, "For Tom" 1). Slice 1 needs no secret
+and no money.

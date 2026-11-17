@@ -5,9 +5,11 @@ source: D-008
 
 # Only Tom approves or merges, and an approval names the exact version approved
 
-No agent merges a pull request, and no agent records an approval in Tom's name. An approval
-names what it approves by id and content hash, including the version of every plan or
-contract it rests on, so a later edit cannot inherit it.
+No agent merges a pull request. An agent may write down what Tom decided, as a decision
+entry or a decision card, but the record takes effect only when Tom merges the commit that
+holds it: the merge is the approval. An approval names what it approves by id and content
+hash, including the version of every plan or contract it rests on, so a later edit cannot
+inherit it.
 
 **Conflict it settled.** Records carry an `actor` field, but a field anyone can write proves
 nothing (second opinion, D-007). Claude's sessions act on GitHub under Tom's own account, so
