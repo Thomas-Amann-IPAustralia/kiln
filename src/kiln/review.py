@@ -183,7 +183,12 @@ def build_input(spec: ReviewSpec, root: Path) -> str:
 
 
 def build_request(spec: ReviewSpec, model: Model, root: Path) -> dict[str, Any]:
-    """The exact body sent to the Responses API. `store: false` keeps no copy at OpenAI."""
+    """The exact body sent to the Responses API.
+
+    `store: false` stops OpenAI storing the response for later retrieval. It does not by itself
+    mean zero retention: abuse-monitoring retention and the account's data controls are
+    separate, and are checked per provider before real data is ever sent (D-007).
+    """
     return {
         "model": model.model,
         "instructions": _redact(spec.instructions, spec.redact).strip(),
