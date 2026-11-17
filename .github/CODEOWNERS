@@ -1,0 +1,15 @@
+# The repo is part of the Council's control plane (docs/charter/agents/security-architect.md).
+# GitHub requests the owner's review on a pull request that touches these paths. It does not
+# block a merge: Claude's pull requests are authored under the owner's account, and an author
+# cannot approve their own pull request, so the owner's merge is the review (D-006).
+
+/.github/                   @Thomas-Amann-IPAustralia
+/.pre-commit-config.yaml    @Thomas-Amann-IPAustralia
+/CLAUDE.md                  @Thomas-Amann-IPAustralia
+/AGENTS.md                  @Thomas-Amann-IPAustralia
+/config/                    @Thomas-Amann-IPAustralia
+/docs/charter/              @Thomas-Amann-IPAustralia
+/docs/adr/                  @Thomas-Amann-IPAustralia
+/docs/repo-seeds/           @Thomas-Amann-IPAustralia
+/pyproject.toml             @Thomas-Amann-IPAustralia
+/uv.lock                    @Thomas-Amann-IPAustralia

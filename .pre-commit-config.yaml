@@ -1,0 +1,41 @@
+# Backpressure before a commit exists: the same checks CI runs, in the same order.
+# Install once with `uv run pre-commit install`.
+#
+# Hooks are local so that they run the locked tool versions and fetch nothing, except
+# gitleaks, which pre-commit builds from the pinned commit (it needs network the first time).
+default_install_hook_types: [pre-commit]
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --fix
+        language: system
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types_or: [python, pyi]
+      - id: pyright
+        name: pyright
+        entry: uv run pyright
+        language: system
+        pass_filenames: false
+        types_or: [python, pyi]
+      - id: pytest
+        name: pytest
+        entry: uv run pytest
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: records
+        name: kiln records check
+        entry: uv run kiln records check
+        language: system
+        pass_filenames: false
+        always_run: true
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e # v8.30.1
+    hooks:
+      - id: gitleaks

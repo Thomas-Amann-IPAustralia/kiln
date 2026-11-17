@@ -1,0 +1,98 @@
+# Kiln's environment: the outside services it depends on, and the build phase that first
+# needs each one. Validated by src/kiln/config.py; an unknown key is an error.
+#
+# Only key NAMES live here. Values come from the environment or .env (see .env.example).
+# Where a cloud session's proxy injects a key, the variable can stay unset: `kiln doctor`
+# sends a placeholder and the proxy replaces it.
+#
+# `needed_from_phase` follows docs/charter/build-plan.md. `kiln doctor` exits 2 when a service
+# needed at or before `current_phase` does not answer.
+
+current_phase: 0
+probe_timeout_seconds: 20
+
+services:
+  langfuse:
+    purpose: Tracing and evaluation for every agent (EU cloud region).
+    needed_from_phase: 0
+    probe:
+      base_url: https://cloud.langfuse.com
+      path: /api/public/projects
+      auth: {scheme: basic, env_user: LANGFUSE_PUBLIC_KEY, env_password: LANGFUSE_SECRET_KEY}
+
+  neon:
+    purpose: Postgres for the catalogue, workflow state, findings, project metadata and evidence.
+    needed_from_phase: 0
+    env: [NEON_DATABASE_URL]
+
+  r2:
+    purpose: Object storage for raw source snapshots and evidence artefacts, by hash.
+    needed_from_phase: 0
+    env: [R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET]
+
+  modal:
+    purpose: Disposable sandboxes for generated or untrusted code, with a spend cap per run.
+    needed_from_phase: 0
+    env: [MODAL_TOKEN_ID, MODAL_TOKEN_SECRET]
+
+  openai:
+    purpose: Model provider.
+    needed_from_phase: 1
+    probe:
+      base_url: https://api.openai.com
+      path: /v1/models
+      auth: {scheme: bearer, env: OPENAI_API_KEY}
+
+  gemini:
+    purpose: Model provider, and the second family for judging OpenAI output.
+    needed_from_phase: 1
+    probe:
+      base_url: https://generativelanguage.googleapis.com
+      path: /v1beta/models?pageSize=1
+      auth: {scheme: header, header: x-goog-api-key, env: GEMINI_API_KEY}
+
+  anthropic:
+    purpose: Model provider for the coding swarm and for sophisticated agentic work.
+    needed_from_phase: 1
+    probe:
+      base_url: https://api.anthropic.com
+      path: /v1/models?limit=1
+      auth: {scheme: header, header: x-api-key, env: ANTHROPIC_API_KEY}
+      extra_headers: {anthropic-version: "2023-06-01"}
+
+  brave:
+    purpose: Web search for discovery only; a search result is never evidence.
+    needed_from_phase: 1
+    env: [BRAVE_API_KEY]
+
+# Models Kiln may call. Prices are copied by hand from the provider's own page, with the date,
+# because no provider serves them through its API. A paid command refuses a request that would
+# go past `prices_valid_up_to_input_tokens`, where the provider charges a higher rate.
+models:
+  openai-reviewer:
+    service: openai
+    model: gpt-6.1-sol
+    effort: high
+    max_output_tokens: 32000
+    request_timeout_seconds: 900
+    usd_per_million_tokens:
+      input: 2.00
+      cached_input: 0.10
+      cache_write: 2.50       # the default 30-minute cache
+      cache_write_long: 5.00  # the 12-hour cache
+      output: 10.00
+    prices_valid_up_to_input_tokens: 272000
+    prices_checked: >-
+      2026-11-17, developers.openai.com/api/docs/pricing (standard tier, context up to 272K
+      tokens), developers.openai.com/api/docs/models/gpt-6.1-sol (effort values low,
+      medium, high, xhigh, max) and developers.openai.com/api/docs/guides/prompt-caching
+      (caching is on by default; a cache write is billed instead of input, not on top)
+
+# Budgets in US dollars. Only Tom sets one; each carries his words and the date. Code enforces
+# it: a paid request starts only if the spend recorded so far plus its upper-bound estimate fits.
+budgets:
+  docs-second-opinion:
+    usd: 2.00
+    approved: >-
+      Tom, 2026-11-17: "Before I agree or disagree, I permit you to spend up to $2 on OpenAI
+      tokens to get a second opinion."
