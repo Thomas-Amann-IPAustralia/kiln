@@ -1,5 +1,7 @@
-# The repo is part of the Council's control plane. Changes to these paths are reviewed by the
-# owner whoever, or whatever, proposes them (docs/charter/agents/security-architect.md).
+# The repo is part of the Council's control plane (docs/charter/agents/security-architect.md).
+# GitHub requests the owner's review on a pull request that touches these paths. It does not
+# block a merge: Claude's pull requests are authored under the owner's account, and an author
+# cannot approve their own pull request, so the owner's merge is the review (D-006).
 
 /.github/                   @Thomas-Amann-IPAustralia
 /.pre-commit-config.yaml    @Thomas-Amann-IPAustralia

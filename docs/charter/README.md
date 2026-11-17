@@ -17,8 +17,9 @@ where the two differ. Every place where the live text departs from the seed is m
 | [`docs/adr/`](../adr/README.md) | The rulings that settled conflicts between proposals (the seed's Appendix A) |
 | [`GLOSSARY.md`](../../GLOSSARY.md) | The shared vocabulary (the seed's "Terms used throughout") |
 
-Runtime agents carry this page, the operating model and their own charter. The build method
-and build plan are for the sessions that build Kiln.
+The build method and build plan are for the sessions that build Kiln. What an agent's runtime
+prompt contains is decided when that agent is built: a versioned prompt, measured like any
+other change (SOP §20.2), not this text pasted in (D-006).
 
 ## Purpose and risk posture
 

@@ -3,10 +3,10 @@
 For the next Claude Code session. Read [`CLAUDE.md`](../CLAUDE.md) first. Build only what Tom
 asks for next; nothing that spends money is approved, because no budget is set.
 
-**Status (2026-11-10):** phase 0, kickoff done. Recorded in D-001 to D-005, on branch
+**Status (2026-11-17):** phase 0, kickoff done and reviewed. Recorded in D-001 to D-006, on branch
 `claude/loving-johnson-8yysoc`. No pull request is open; Tom has not asked for one.
 
-**Next free decision number: D-006**
+**Next free decision number: D-007**
 
 ## Where things stand
 
@@ -47,7 +47,8 @@ asks for next; nothing that spends money is approved, because no budget is set.
 ## For Tom
 
 Each has a recommendation; most can be answered in a word. Detail is in D-005 unless another
-entry is named.
+entry is named. **Items 1 and 14 start the next step.** Nothing is built on the others until
+you answer them, so they can wait.
 
 1. **The phase 0 sketch.** Approve its build order? *Recommended: yes.* And grill the
    charter's front page and operating model before slice 1, or after? *Recommended: before.*
@@ -71,9 +72,15 @@ entry is named.
     the proposal gives detail; what it does not name is outside the first build. Correct?
 11. **A budget, in dollars:** for phase 0's cents of sandbox and embedding calls, for the
     first eval sets, and an allowance for exploration without asking.
-12. **Protect `main`:** require the `ci` checks and a CODEOWNERS review. It is a repository
-    setting only you can make (D-001).
+12. **Protect `main`:** require a pull request and the `ci` checks before merging. **Do not**
+    turn on "require review from code owners": Claude's pull requests are authored under your
+    account, GitHub will not let you approve your own, and every merge would block. Corrects
+    D-001's recommendation (D-006).
 13. **The model heuristics** in `CLAUDE.md` are the SOP's table. Still yours?
+14. **The documentation review** (D-006). Four recommendations: cut the always-loaded rulebook
+    to about 120 lines and move procedures into skills; turn the rules that cannot bend into
+    hooks and checks; add a decision card to slice 1, with approvals bound to the record; and
+    draw diagrams as Mermaid text. *Recommended: all four, the first before slice 1.*
 
 ## Conventions to keep
 

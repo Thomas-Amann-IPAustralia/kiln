@@ -88,8 +88,8 @@ where the detail is. Plain English. Never claim more than was verified.
   the code; fixture tests; real data with no API; replays of recorded runs; probes for cents;
   a smoke test on the real transport; the budgeted run; reading outputs by hand; checking the
   instrument.
-- **Check a fact at its source before building on it.** This session found the charter's
-  install command and glossary file name out of date by reading the skills repo (D-004).
+- **Check a fact at its source before building on it.** A seed can be out of date: two of
+  the charter's details were (D-004).
 - **Every claim carries a basis:** observed, authoritative, rule, supported, inferred, assumed
   or unknown. A dated policy fact from a seed is `assumed` until verified at its source.
 - **Experiments** follow SOP §12: the grid, the choice rule and the headline are committed

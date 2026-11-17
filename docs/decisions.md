@@ -234,3 +234,86 @@ Nothing was measured.
 
 **Consequences.** Until Tom rules, R2 to R4 and F2 are open and the affected parts are not
 built. None blocks slices 1 and 2 of the sketch. **For Tom:** handover, "For Tom" 1 to 8.
+
+## D-006 — The documentation reviewed against Anthropic's and GitHub's guidance: the rulebook is too long, and D-001's branch-protection advice would have blocked every merge (2026-11-17)
+
+**Context.** Tom asked whether the documentation from D-001 to D-005 would be considered good
+practice by AI experts, and what I think of deferring the Interpreter. Claude wrote the
+documents under review, so this is a self-review. The charter's own rule is that a reviewer
+needs a fresh context and another provider to be independent (ADR-0026).
+
+**Decision (a recommendation; Tom decides adoption).** Read against Claude Code's memory and
+best-practices pages, agents.md, and GitHub's pages on required reviews and code owners, all
+read on 2026-11-17.
+
+**What holds up.**
+
+- `CLAUDE.md` imports `AGENTS.md` (`@AGENTS.md`). That is the documented pattern, and
+  `AGENTS.md` has the sections agents.md suggests.
+- Rules are backed by checks. `kiln records check` and the hygiene tests turn written rules
+  into failing builds. The seal on the seeds caught a real error before commit (D-002's
+  correction).
+- Decisions carry their reasons. The best-practices page names undocumented decisions as
+  exactly what belongs in the record.
+- Reconstructions are labelled, and dated facts are marked `assumed`.
+
+**What does not.**
+
+| | Found | Evidence | Recommended |
+| --- | --- | --- | --- |
+| 1 | The always-loaded rulebook is over the guidance | `CLAUDE.md` is 189 lines and imports `AGENTS.md`'s 77: 266 lines and about 2,500 words in every session. The memory page targets "under 200 lines per CLAUDE.md file" and says longer files "reduce adherence". Imports load at launch, so they do not reduce the cost. | Cut the always-loaded part to about 120 lines: scope, commands, Tom's five decisions, the tripwires and where things live. Move procedures that apply only sometimes (experiments, paid runs, flags, the reply format) into skills, which load only when used. |
+| 2 | Rules that cannot bend are written, not enforced | 23 uses of never, always, must or non-negotiable in the always-loaded files. The best-practices page says emphasis tends to cause over-application, and that rules that cannot bend belong in hooks or deny rules. | Enforce, then delete the sentence. Next: a deny rule or hook that stops edits under `docs/repo-seeds/`. The manifest check stays, because the ruff incident came through a shell command, which a deny rule on edits would not catch. |
+| 3 | The documents run far ahead of the code | 49 live Markdown files and about 25,000 words, against 572 lines of code. Normal at kickoff, but a description of a system that does not exist yet is the kind that drifts. | No new design document until slice 1's code exists. From then on, the code and its tests are the spec, and the documents follow them in the same commit. |
+| 4 | The charter's front page said what runtime prompts contain | "Runtime agents carry this page, the operating model and their own charter" was Claude's addition, not the charter's, and it decided something undecided. | Corrected now. A runtime prompt is a versioned, measured artefact (SOP §20.2). |
+| 5 | The glossary is large for a seed | 56 terms. The skills' format asks for project-specific terms only, added as they are resolved. Some are general (sandbox, backpressure, ADR). | Let the grilling session prune it. |
+
+**A correction (D-001).** D-001 said CODEOWNERS "routes changes to the control plane" to Tom,
+and recommended requiring a code-owner review on `main`. Both are wrong for this repo.
+
+- Pull request #1 came from a Claude session and is authored by Tom's account. CI run 1's
+  actor is Tom's account too.
+- GitHub: "Pull request authors cannot approve their own pull requests." With Tom as the only
+  code owner, a required code-owner review could never be met, and every merge would need an
+  admin bypass.
+- Without that requirement, CODEOWNERS only requests a review. It enforces nothing.
+
+So with one person and one GitHub identity, Tom's merge is the review. The handover's item 12
+now recommends requiring a pull request and the `ci` checks, and not a code-owner review. The
+CODEOWNERS comment says what the file does. D-001 stands as the record of what was believed.
+
+**On deferring the Interpreter (a recommendation).**
+
+- **Deferring the agent is right.** It translates the Council's output, and there is none yet.
+  Its design should come from observed friction, by the charter's own rule that evidence about
+  users comes from real users first. Tom is its only user. In build sessions, Claude Code is
+  already doing its job.
+- **Deferring its job is not.** Kickoff ended with 13 items for Tom, several of them
+  technical. G2 assumes Tom understands the plan he approves. The cost of a decision he did
+  not follow lands later and larger.
+- **Three cheap pieces now,** so the agent is a renderer when it arrives, not a redesign:
+  1. **A decision card in slice 1:** the question, the options and their consequences, a
+     recommendation, any dissent, whether the decision can be reversed, and what happens if
+     Tom does not answer. An approval binds to the card's id and hash, never to a summary of
+     it. When the Interpreter arrives it renders cards, and it cannot paraphrase a decision
+     into existence.
+  2. **Diagrams as Mermaid text.** The charter's two diagrams were lost because they were
+     pictures. Mermaid renders on GitHub, survives export and stays readable to agents. That
+     is the Illustrator's job done cheaply, for an owner who learns visually.
+  3. **A friction log:** one line each time Tom needs a second explanation or reverses a
+     decision he misread. By phase 5 it is the Interpreter's requirements and its first eval
+     set.
+- **One constraint to keep:** a single point of contact means every decision passes through
+  one model's wording. Build the Interpreter as a renderer over records, with a check that
+  every option and number it shows traces to the card. That is the same pattern as the
+  Researcher's citation check.
+
+**Checked.** The guidance pages were read for this entry. The counts above were counted
+(`wc`, `grep`). Pull request #1's author and CI run 1's actor were read from GitHub.
+
+**Spend:** $0. An independent review by another provider's model would cost cents, and needs
+a budget (handover, "For Tom" 11).
+
+**Consequences.** Corrected in this commit: the CODEOWNERS comment, the charter front page's
+line on runtime prompts, a session-specific line in `CLAUDE.md`, and the handover's item 12.
+**For Tom:** handover item 14. The rulebook's restructure waits for his answer, because it
+changes what every later session reads.
