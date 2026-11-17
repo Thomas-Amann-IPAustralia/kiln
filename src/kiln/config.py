@@ -91,10 +91,18 @@ Usd = Annotated[float, Field(ge=0)]
 
 
 class Prices(_Strict):
-    """US dollars per million tokens, as the provider's own pricing page shows them."""
+    """US dollars per million tokens, as the provider's own pricing page shows them.
+
+    Input tokens fall in exactly one bucket: uncached, read from the cache, or written to it.
+    A cache write is billed at its own rate, not on top of the input rate.
+    """
 
     input: Usd
     cached_input: Usd
+    cache_write: Usd
+    """Writing to the default (shortest-lived) cache."""
+    cache_write_long: Usd
+    """Writing to the long-lived cache, if a provider reports any."""
     output: Usd
 
 

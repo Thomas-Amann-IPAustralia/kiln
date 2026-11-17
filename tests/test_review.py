@@ -16,7 +16,13 @@ from kiln.cli import app
 from kiln.config import KilnConfig, Prices
 from kiln.errors import KilnError
 
-PRICES = {"input": 2.0, "cached_input": 0.1, "output": 10.0}
+PRICES = {
+    "input": 2.0,
+    "cached_input": 0.1,
+    "cache_write": 2.5,
+    "cache_write_long": 5.0,
+    "output": 10.0,
+}
 
 CONFIG = KilnConfig.model_validate(
     {
@@ -172,8 +178,10 @@ def test_the_estimate_is_an_upper_bound_and_says_what_it_assumes() -> None:
     request = {"instructions": "x" * 30, "input": "y" * 2970, "max_output_tokens": 1000}
     estimate = review.estimate(request, Prices(**PRICES))
     assert estimate.input_tokens_bound == 1001
-    assert estimate.usd_bound == pytest.approx((1001 * 2.0 + 1000 * 10.0) / 1e6)
-    assert "none of it cached" in estimate.assumes
+    # The bound prices every input token at the dearer of input and a cache write.
+    exact = (1001 * 2.5 + 1000 * 10.0) / 1e6
+    assert exact <= estimate.usd_bound < exact + 1e-6
+    assert "written to the default cache" in estimate.assumes
 
 
 def test_cost_uses_exclusive_buckets() -> None:
@@ -184,6 +192,66 @@ def test_cost_uses_exclusive_buckets() -> None:
     assert review.cost(usage, Prices(**PRICES)) == pytest.approx(
         (800 * 2.0 + 200 * 0.1 + 300 * 10.0) / 1e6
     )
+
+
+def test_cache_writes_are_priced_instead_of_input_not_on_top() -> None:
+    """Why: caching is on by default and a write costs 1.25 times input; pricing writes as
+    plain input under-records the spend (found by the smoke test, D-007)."""
+    usage = review.Usage(
+        input_tokens=1000,
+        cached_input_tokens=100,
+        cache_write_tokens=600,
+        cache_write_long_tokens=50,
+        output_tokens=10,
+        reasoning_tokens=0,
+    )
+    assert review.cost(usage, Prices(**PRICES)) == pytest.approx(
+        (250 * 2.0 + 100 * 0.1 + 600 * 2.5 + 50 * 5.0 + 10 * 10.0) / 1e6
+    )
+
+
+def test_usage_buckets_that_overflow_the_input_are_refused() -> None:
+    """Why: a provider's usage that does not add up must stop the run, not be priced."""
+    usage = review.Usage(
+        input_tokens=100,
+        cached_input_tokens=80,
+        cache_write_tokens=40,
+        output_tokens=0,
+        reasoning_tokens=0,
+    )
+    with pytest.raises(KilnError, match="add up"):
+        review.cost(usage, Prices(**PRICES))
+
+
+def test_the_providers_cache_write_fields_are_read() -> None:
+    """Why: the field names come from a live response (00-smoke), not from memory."""
+    body = {
+        "usage": {
+            "input_tokens": 1000,
+            "output_tokens": 5,
+            "input_tokens_details": {
+                "cached_tokens": 0,
+                "cache_write_tokens": 900,
+                "cache_write_tokens_details": {"ttl_12h_tokens": 100, "ttl_30m_tokens": 800},
+            },
+            "output_tokens_details": {"reasoning_tokens": 0},
+        }
+    }
+    usage = review._usage(body)  # pyright: ignore[reportPrivateUsage]
+    assert usage is not None
+    assert (usage.cache_write_tokens, usage.cache_write_long_tokens) == (800, 100)
+
+
+def test_a_record_from_before_cache_writes_were_priced_still_loads(repo: Path) -> None:
+    """Why: old records stay readable when the schema grows (SOP D-060)."""
+    old = {
+        "input_tokens": 618,
+        "cached_input_tokens": 0,
+        "output_tokens": 38,
+        "reasoning_tokens": 0,
+    }
+    usage = review.Usage.model_validate(old)
+    assert usage.cache_write_tokens == 0
 
 
 def test_confirm_sends_to_the_configured_host_and_records_the_cost(repo: Path) -> None:

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
 import subprocess
@@ -71,10 +72,15 @@ class ReviewSpec(_Strict):
 
 
 class Usage(_Strict):
+    """Input buckets are exclusive: uncached = input - cached - both kinds of cache write.
+    The cache-write fields default to 0 so that records made before they existed still load."""
+
     input_tokens: int
     cached_input_tokens: int
     output_tokens: int
     reasoning_tokens: int
+    cache_write_tokens: int = 0
+    cache_write_long_tokens: int = 0
 
 
 class Estimate(_Strict):
@@ -197,24 +203,32 @@ def estimate(request: Mapping[str, Any], prices: Prices) -> Estimate:
     chars = len(request["instructions"]) + len(request["input"])
     input_bound = chars // CHARS_PER_TOKEN_BOUND + 1
     output_bound = int(request["max_output_tokens"])
-    usd = (input_bound * prices.input + output_bound * prices.output) / 1_000_000
+    input_rate = max(prices.input, prices.cache_write)
+    usd = (input_bound * input_rate + output_bound * prices.output) / 1_000_000
     return Estimate(
         input_tokens_bound=input_bound,
         output_tokens_bound=output_bound,
-        usd_bound=round(usd, 6),
+        usd_bound=math.ceil(usd * 1_000_000) / 1_000_000,  # a bound never rounds down
         assumes=(
-            f"input at {CHARS_PER_TOKEN_BOUND} characters a token and none of it cached; "
-            "every output token used, reasoning included, at the output price"
+            f"input at {CHARS_PER_TOKEN_BOUND} characters a token, all of it written to the "
+            "default cache and none read from it; every output token used, reasoning "
+            "included, at the output price"
         ),
     )
 
 
 def cost(usage: Usage, prices: Prices) -> float:
-    """Exclusive buckets: uncached input, cached input, output (reasoning is inside output)."""
-    uncached = usage.input_tokens - usage.cached_input_tokens
+    """Exclusive buckets: uncached input, cache reads, cache writes (two lifetimes) and output.
+    Reasoning tokens are inside output, so they are not counted again."""
+    written = usage.cache_write_tokens + usage.cache_write_long_tokens
+    uncached = usage.input_tokens - usage.cached_input_tokens - written
+    if uncached < 0:
+        raise KilnError("the provider's usage buckets add up to more than its input tokens")
     usd = (
         uncached * prices.input
         + usage.cached_input_tokens * prices.cached_input
+        + usage.cache_write_tokens * prices.cache_write
+        + usage.cache_write_long_tokens * prices.cache_write_long
         + usage.output_tokens * prices.output
     ) / 1_000_000
     return round(usd, 6)
@@ -235,11 +249,17 @@ def _usage(body: Mapping[str, Any]) -> Usage | None:
         return None
     input_details = _obj(usage.get("input_tokens_details"))
     output_details = _obj(usage.get("output_tokens_details"))
+    writes = int(input_details.get("cache_write_tokens", 0))
+    lifetimes = _obj(input_details.get("cache_write_tokens_details"))
+    long_writes = int(lifetimes.get("ttl_12h_tokens", 0))
     return Usage(
         input_tokens=int(usage.get("input_tokens", 0)),
         cached_input_tokens=int(input_details.get("cached_tokens", 0)),
         output_tokens=int(usage.get("output_tokens", 0)),
         reasoning_tokens=int(output_details.get("reasoning_tokens", 0)),
+        # Without a breakdown, every write is priced at the default lifetime's rate.
+        cache_write_tokens=writes - long_writes,
+        cache_write_long_tokens=long_writes,
     )
 
 
@@ -412,7 +432,8 @@ def render(record: ReviewRecord) -> str:
     """The answer as a Markdown page, headed by what produced it and what it cost."""
     usage = record.usage
     usage_line = (
-        f"{usage.input_tokens:,} input ({usage.cached_input_tokens:,} cached), "
+        f"{usage.input_tokens:,} input ({usage.cached_input_tokens:,} read from the cache, "
+        f"{usage.cache_write_tokens + usage.cache_write_long_tokens:,} written to it), "
         f"{usage.output_tokens:,} output ({usage.reasoning_tokens:,} of them reasoning)"
         if usage
         else "not reported"
