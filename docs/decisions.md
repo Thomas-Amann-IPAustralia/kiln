@@ -411,3 +411,38 @@ and kept for that purpose.
 the records check proves), `AGENTS.md` (the paid command and its rule), the README, and the
 handover, whose owner list now leads with the five items that start the next step. **For
 Tom:** handover items 1 to 5. D-006's recommendations stand as amended here.
+
+## D-008 — Tom adopts the five recommendations of D-006 and D-007 (2026-11-17)
+
+**Context.** D-007 put five recommendations to Tom, drawn from Claude's review (D-006) and
+OpenAI's second opinion. Tom answered: "Yes to all."
+
+**Decision (owner).** Each change below lands in this entry's commit.
+
+| | Adopted | What changed |
+| --- | --- | --- |
+| 1 | Revise the phase 0 sketch before approving it, for D-007's findings 1, 2 and 7 | The charter's phase 0 exit test now ends in one sample brief taken the whole thin path before the hosted services, with the verifier setting the pass, the harness refusals tested and the scanner baseline in CI. First moves 5 and 6 come after that path. The sketch itself is revised in D-009 and goes back to Tom for approval. |
+| 2 | Fix the authority rules, then shorten | Charter rule 11 now names Tom's gates and changes to what he approved, as well as tripwires. `coding-swarm.md`'s opening names the Tom band. `AGENTS.md` now holds the rules every agent must follow: Tom's five decisions, when to stop and ask, and what no agent ever does. `CLAUDE.md` keeps only what is specific to Claude Code sessions. |
+| 3 | Protect `main` with a pull request and both CI jobs; no code-owner review; Claude never merges | ADR-0028. The GitHub setting is Tom's to make (handover, "For Tom" 2). |
+| 4 | Compare a single-session baseline before building beyond the chair and the Researcher | ADR-0029, and the phase 1 exit test. |
+| 5 | Defer the interface agents; build the interface now | ADR-0030: decision cards (in `CLAUDE.md` now, a typed record in slice 1), diagrams as Mermaid text, and [`docs/friction-log.md`](friction-log.md). |
+
+Adopting item 1 adopts D-005 R3 too: an independent verifier sets a ticket's pass, and loops
+cannot edit what judges them (ADR-0027, `coding-swarm.md`).
+
+**What the rulebook change did to its length.** `CLAUDE.md` fell from 189 lines to 171, and
+`AGENTS.md` rose from 77 to 121, so the two together went from 266 to 292. Both are under
+Anthropic's 200-line target per file. The rules on authority, money, security and stopping
+are now each stated once, and every agent gets them, not only Claude.
+
+**Not adopted, and still open:** the evaluation policy (D-007 recommendation 6) and the
+items D-005 left for Tom. They remain in the handover under "These can wait".
+
+**The limit ADR-0028 states.** "Claude never merges" is a rule, not yet a mechanism. Claude's
+sessions act under Tom's GitHub account. Before any loop runs unattended, approvals need a
+path no agent can use. That choice is Tom's, and it is in the handover.
+
+**Spend:** $0.
+
+**Consequences.** Next is D-009: the sketch revised to match, for Tom's approval. Nothing in
+slice 1 is built until then.

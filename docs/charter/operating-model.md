@@ -77,7 +77,10 @@ Volatile facts are never embedded. Prices, quotas, package versions, vulnerabili
 8. Source, finding and decision stay separate. A model summary is never stored as a source.
 9. Complexity needs a reason. Add infrastructure or dependencies only when the current stack cannot do the job, and record why.
 10. Each agent writes its own position. No agent restates another's position in the record.
-11. Agents decide by default and record why. Only a tripwire waits for Tom.
+11. Agents decide by default and record why. They wait for Tom only at a tripwire, at the four gates he decides, and on a change to anything he approved.
+
+> **Changed from the seed (D-008).** Rule 11 read "Only a tripwire waits for Tom", which
+> contradicted the Tom band below and Tom's four gates (ADR-0001, ADR-0013, ADR-0025).
 
 ## Constraints, autonomy and escalation
 

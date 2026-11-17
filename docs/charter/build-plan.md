@@ -6,11 +6,15 @@ Build in six phases, and close each one with a test you can run rather than a fe
 > closed by an exit test") that did not survive export. The phases and what each builds are
 > from this charter's text. **The exit tests are drafts**, written from each agent's first
 > slice, because the seed's are lost. Tom to confirm or replace.
+>
+> **Changed again (D-008).** Phase 0's exit test now ends in one sample brief taken the whole
+> thin path, with the verifier setting the pass and the harness refusals tested, before the
+> hosted services. Phase 1's adds the single-session baseline (ADR-0029).
 
 | Phase | Builds | Exit test (draft) |
 | --- | --- | --- |
-| **0** | The shared core, the harness controls, and one thin path from brief to code | From a fresh clone, with no network, `make check` passes. `kiln doctor` reports every phase 0 service ready. A sample brief validates as a project profile and walks G0 to G5 on fixture artefacts, where a missing artefact fails its gate. Each tripwire has a fixture that fires it. One source goes through ingestion end to end, and a re-run is byte-identical. A trivial generated program runs in a Modal sandbox under a spend cap, and its trace is read back from Langfuse. |
-| **1** | Solution Architect (chair), Researcher, and the coding swarm as one loop | The chair's first slice runs on the three sample briefs. The Researcher's lookup and verify modes are measured against the 20 golden questions, the injected-instructions page included. One loop takes a chair-written ticket list to passing tickets in a sandbox. |
+| **0** | The shared core, the harness controls, and one thin path from brief to code | From a fresh clone, with no network, `make check` passes. One sample brief goes the whole thin path: it validates as a project profile, a plan and one ticket are written, a loop implements the ticket in a sandbox, and the verifier, not the loop, sets its pass. Each tripwire has a fixture that fires it, and spend is refused before a cap is passed, not after. Inside the sandbox, a file, a host and a credential the run was not given are each refused. The scanner baseline (Semgrep CE, OSV-Scanner, Trivy) runs in CI. Then the hosted services: `kiln doctor` reports every phase 0 service ready, one source goes through ingestion end to end, a re-run is byte-identical, and a trace is read back from Langfuse. |
+| **1** | Solution Architect (chair), Researcher, and the coding swarm as one loop | The chair's first slice runs on the three sample briefs. The Researcher's lookup and verify modes are measured against the 20 golden questions, the injected-instructions page included. One loop takes a chair-written ticket list to passing tickets in a sandbox. The three sample briefs also go through one plain Claude Code session, and the two paths are compared by a rule committed first. Phase 2 starts only if the Council's path wins, or Tom decides to go on (ADR-0029). |
 | **2** | Security Architect, Governance Guru, and the source change monitor | Both assess the Council itself: a security profile, a threat model, encoded harness rules and the CI baseline; a governance intake, the obligations it triggers, and an assurance case that states what is unresolved. The change monitor opens a revalidation task when a registered source's hash changes. |
 | **3** | Data Engineer, UX Designer | The Data Engineer's first slice runs on a messy CSV and an XLSX workbook. The UX Designer's first slice runs on one transactional form service, through to an Experience Assurance Report. |
 | **4** | Data Analyst | Its first slice takes a synthetic test-results dataset through to a DVF evidence statement. One sample brief runs G0 to G4 with every expert, and seeded defects trip each tripwire. |
@@ -23,7 +27,9 @@ The harness controls that keep Tom's environment safe arrive in phase 0, before 
 ## First moves
 
 > **Changed from the seed.** Each move now has a status, as of D-005 (10 November 2026). The
-> install command is corrected from the skills repo's README. The order is the seed's.
+> install command is corrected from the skills repo's README. The order is the seed's, but
+> since D-008 moves 5 and 6 (the hosted services and ingestion) come after the thin path:
+> one brief to one verified ticket. The sketch sets the working order.
 
 | # | Move | Status |
 | --- | --- | --- |

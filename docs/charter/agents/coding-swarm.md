@@ -1,6 +1,6 @@
 # Coding swarm
 
-The coding swarm is a coding-agent CLI (Claude Code in headless mode today) running Ralph loops inside Modal sandboxes. It implements tickets against the build contract, with broad autonomy, and pauses a path only for a Red item, which goes to the owning expert, or a tripwire, which goes to Tom. It is not a Council member, and reaches one only through typed questions, never open chat.
+The coding swarm is a coding-agent CLI (Claude Code in headless mode today) running Ralph loops inside Modal sandboxes. It implements tickets against the build contract, with broad autonomy, and pauses a path only for a Red item, which goes to the owning expert, or a tripwire or a change to something Tom approved, which goes to Tom. It is not a Council member, and reaches one only through typed questions, never open chat.
 
 ## How a loop runs
 
@@ -10,10 +10,14 @@ Every iteration loads the same stack: AGENTS.md, GLOSSARY.md, the ticket file an
 2. Searches the code before assuming anything is missing, and checks the ticket against the contracts. If the ticket is ambiguous or clashes with a decision, it raises a typed question to the owning expert and works on another ticket meanwhile. The answer updates the contract, so the next loop does not ask again.
 3. Implements that one ticket only.
 4. Runs every check. A failing check blocks the commit.
-5. Commits, sets the ticket's `passes` flag and appends a short progress note.
+5. Commits, appends a short progress note and hands the commit to the verifier. The verifier, not the loop, sets the ticket's `passes` flag (ADR-0027).
 6. Stops with a completion signal when every ticket passes, or when the iteration cap or token budget runs out.
 
-Tickets use the JSON shape [Pocock borrows](https://www.aihero.dev/tips-for-ai-coding-with-ralph-wiggum) from Anthropic's work on long-running agents: a description, verification steps and a `passes` flag. The chair writes the tickets. A loop may only flip its own ticket's flag, and only after the checks pass.
+Tickets use the JSON shape [Pocock borrows](https://www.aihero.dev/tips-for-ai-coding-with-ralph-wiggum) from Anthropic's work on long-running agents: a description, verification steps and a `passes` flag. The chair writes the tickets. The verifier sets a ticket's flag, after running its verification steps and every check on a clean checkout of the loop's commit. A loop never sets a flag.
+
+> **Changed from the seed (D-008).** The seed let a loop flip its own ticket's flag after the
+> checks passed, and said nothing of the Tom band in this page's opening. Both now follow
+> ADR-0027 and rule 11 as amended.
 
 ## Backpressure
 
@@ -58,3 +62,5 @@ A loop queries the constraints that apply to its ticket rather than loading ever
 - Run HITL only while a loop prompt is new. After that, AFK is the default, always with an iteration cap and a spend cap.
 - Each sandbox gets a repo-scoped, short-lived GitHub token and a spend-capped model key. Network access is open for packages and documentation, and closed to live systems.
 - A tripwire stops the affected path and asks Tom. The loop carries on with other tickets.
+- `contracts/`, `fitness/` and each ticket's verification steps are read-only to loops. A loop that needs one changed raises a typed question (ADR-0027).
+- No loop or agent merges a pull request. Tom's merge is the human review (ADR-0028).

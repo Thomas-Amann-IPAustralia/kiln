@@ -103,8 +103,13 @@ lines, heading levels and non-breaking spaces were normalised. D-003 in
 | Appendix A | Now `docs/adr/0001` to `0026` | The charter's own first move |
 | Appendix B | Now [proposal-map.md](proposal-map.md), with a status table per proposal | Review item 5: the proposals still say what the charter overruled |
 
-Nothing else was changed. The amendments the review recommends are **not** applied: they are
-listed in D-005 as recommendations for Tom to adopt, defer or decline.
+| [operating-model.md](operating-model.md), rule 11 | "Only a tripwire waits for Tom" now names Tom's gates and changes to what he approved | It contradicted the Tom band (D-007 finding 3). **Tom adopted, D-008** |
+| [agents/coding-swarm.md](agents/coding-swarm.md) | A verifier sets a ticket's pass; contracts, fitness and verification steps are read-only to loops; no agent merges | ADR-0027, ADR-0028. **Tom adopted, D-008** |
+| [agents/interface-agents.md](agents/interface-agents.md) | The agents stay deferred; the decision card, Mermaid diagrams and friction log start now | ADR-0030. **Tom adopted, D-008** |
+| [build-plan.md](build-plan.md) | Phase 0 ends in a thin path before the hosted services; phase 1 adds the baseline | ADR-0029, D-007 findings 2 and 7. **Tom adopted, D-008** |
+
+Nothing else was changed. The other amendments the review recommends (D-005) are **not**
+applied: they wait for Tom to adopt, defer or decline them.
 
 ## Sources
 

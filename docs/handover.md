@@ -3,10 +3,10 @@
 For the next Claude Code session. Read [`CLAUDE.md`](../CLAUDE.md) first. Build only what Tom
 asks for next; nothing that spends money is approved, because no budget is set.
 
-**Status (2026-11-17):** phase 0, kickoff done and reviewed twice. Recorded in D-001 to D-007, on branch
+**Status (2026-11-17):** phase 0. Kickoff done, reviewed twice, and five recommendations adopted. Recorded in D-001 to D-008, on branch
 `claude/loving-johnson-8yysoc`. No pull request is open; Tom has not asked for one.
 
-**Next free decision number: D-008**
+**Next free decision number: D-009**
 
 ## Where things stand
 
@@ -55,47 +55,40 @@ asks for next; nothing that spends money is approved, because no budget is set.
 
 ## For Tom
 
-Two reviews of the docs, Claude's (D-006) and a second opinion from OpenAI's model (D-007),
-agree on what should come first. **These five start the next step.** Each is a yes or no, and
-each recommendation is yes.
+You adopted D-007's five recommendations (D-008). **Two things start the next step:**
 
-1. **Revise the phase 0 sketch before approving it.** Add to phase 0: the scanner baseline
-   (Semgrep, OSV-Scanner, Trivy), a minimal credential boundary, an independent verifier that
-   sets a ticket's `passes` flag (D-005 R3), approvals that only you can make and that name the
-   exact version approved, and a first useful result (one brief, one plan, one verified
-   ticket) before the hosted services.
-2. **Fix the authority rules, then shorten.** The charter's rule 11 ("Only a tripwire waits
-   for Tom") contradicts the Tom band and your four gates. Put the rules on authority and
-   spending in `AGENTS.md`, where any coding agent reads them, then remove the duplication from
-   `CLAUDE.md`.
-3. **Protect `main`:** require a pull request and both CI jobs (`lint, types, tests, records`
-   and `gitleaks (tripwire 2)`). **Do not** require a code-owner review: Claude's pull requests
-   are authored under your account, and you cannot approve your own. Add a rule that Claude
-   never merges: your merge is the only human review there is (D-006, D-007).
-4. **Compare against a simpler baseline** before building beyond the chair and the Researcher:
-   the same three sample briefs through one Claude Code session, on quality, cost and time.
-5. **The Interpreter: defer the agents, build the interface now.** A decision card in slice 1,
-   diagrams as Mermaid text where they help, and a one-line friction log.
+1. **Approve the revised phase 0 sketch,**
+   [`docs/sketches/phase-0-shared-core.md`](sketches/phase-0-shared-core.md), once D-009 revises it.
+   *Recommended: yes.* Approving it starts slice 1 and nothing else. It can be undone: no code
+   exists yet. If you do not answer, nothing is built.
+2. **Protect `main` on GitHub** (ADR-0028). Only you can: Settings, then Rules, then Rulesets,
+   then a new branch ruleset for the default branch. Turn on "Require a pull request before
+   merging" with 0 required approvals, and "Require status checks to pass" with both CI jobs,
+   `lint, types, tests, records` and `gitleaks (tripwire 2)`. Also block force pushes and
+   deletions. Leave "Require review from Code Owners" off.
 
 **These can wait.** Nothing is built on them until you answer.
 
-6. **The gate table** in `docs/charter/operating-model.md` was rebuilt from text; four places
+3. **The gate table** in `docs/charter/operating-model.md` was rebuilt from text; four places
    are marked *inferred*. Correct? (D-003)
-7. **The six draft exit tests** in `docs/charter/build-plan.md`: confirm, or send the
+4. **The six draft exit tests** in `docs/charter/build-plan.md`: confirm, or send the
    originals. (D-003)
-8. **Secrets, before the session that needs them:** `NEON_DATABASE_URL`, `R2_BUCKET`,
+5. **Secrets, before the session that needs them:** `NEON_DATABASE_URL`, `R2_BUCKET`,
    `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`; later an Anthropic key and `BRAVE_API_KEY`. (D-004)
-9. **A Langfuse project for Kiln.** The session's keys point at `data-expert-agent`.
+6. **A Langfuse project for Kiln.** The session's keys point at `data-expert-agent`.
    *Recommended: a new one.* (D-005 F1)
-10. **Four design rulings from D-005:** real-world results come back as de-identified
+7. **Four design rulings from D-005:** real-world results come back as de-identified
     aggregates (R2); provenance, not screening, guards tripwire 1 (R4); files are the record
     and Postgres an index (F2); and the reading of the charter's rules on silence (R5).
     *Recommended: yes to each.*
-11. **A budget** for phase 0's cents of sandbox and embedding calls, and an allowance for
+8. **A budget** for phase 0's cents of sandbox and embedding calls, and an allowance for
     exploration. $1.62 of the second-opinion budget is unspent; it is kept for that purpose.
-12. **Evaluation policy:** the SOP chooses models on the test split (§20.5) but says "choose on
+9. **Evaluation policy:** the SOP chooses models on the test split (§20.5) but says "choose on
     dev, report on test" (§12). *Recommended: choose on dev, always.* (D-007)
-13. **The model heuristics** in `CLAUDE.md` are the SOP's table. Still yours?
+10. **The model heuristics** in `CLAUDE.md` are the SOP's table. Still yours?
+11. **How approvals are made unforgeable,** before any loop runs unattended (ADR-0028): a
+    separate GitHub identity for agents, or approvals signed with a key that never enters a
+    cloud session. *Recommended: decide when the sketch's verifier slice is built.*
 
 ## Conventions to keep
 

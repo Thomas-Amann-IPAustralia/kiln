@@ -5,6 +5,7 @@ is hard to reverse and would surprise a reader who did not know why.
 
 - **ADR-0001 to ADR-0026** are the 26 rows of the seed charter's Appendix A, text unchanged
   (D-003). Each settles a conflict between proposals, or between a proposal and the brief.
+- **ADR-0027 onwards** are rulings Tom adopted after kickoff, each from a decision entry.
 - **A new ADR** is written when Tom adopts a design ruling. It lands in the same commit as the
   decision entry that records the adoption.
 - **An ADR is never edited to change its ruling.** A new ADR supersedes it, and the old one's
@@ -53,3 +54,7 @@ Three series of numbered records exist, and they are not interchangeable:
 | [ADR-0024](0024-handover-at-g4.md) | The Council hands over a test-ready build at G4; Tom's team runs the test | accepted |
 | [ADR-0025](0025-tom-approves-the-plan-at-g2.md) | Tom approves the plan at G2, before any code is written | accepted |
 | [ADR-0026](0026-one-cross-provider-reviewer-before-g2.md) | One reviewer from another model provider red-teams the plan before G2 | accepted |
+| [ADR-0027](0027-an-independent-verifier-sets-a-pass.md) | An independent verifier sets a ticket's pass; loops cannot edit what judges them | accepted |
+| [ADR-0028](0028-only-tom-approves-or-merges.md) | Only Tom approves or merges, and an approval names the exact version approved | accepted |
+| [ADR-0029](0029-the-council-must-beat-a-single-session-baseline.md) | The Council must beat a single-session baseline before it grows | accepted |
+| [ADR-0030](0030-the-interface-now-the-interface-agents-later.md) | The interface to Tom is built now; the Interpreter and Illustrator agents later | accepted |
