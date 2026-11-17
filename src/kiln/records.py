@@ -20,6 +20,7 @@ ADR_DIR = Path("docs/adr")
 SEEDS_DIR = Path("docs/repo-seeds")
 SEEDS_MANIFEST = SEEDS_DIR / "MANIFEST.sha256"
 SEEDS_UNSEALED = frozenset({"MANIFEST.sha256", "README.md"})
+REVIEWS_DIR = Path("docs/reviews")
 
 ADR_STATUSES = ("proposed", "accepted", "deprecated", "superseded by ADR-")
 
@@ -190,12 +191,15 @@ def check_seeds(root: Path) -> list[Problem]:
 
 
 def live_markdown(root: Path) -> list[Path]:
-    """Every Markdown file that is ours to keep current: all but the sealed seeds."""
+    """Every Markdown file that is ours to keep current. Not the sealed seeds, and not review
+    outputs, which are model output kept as records: their links are the model's."""
     skip = {".git", ".venv", "node_modules"}
+    frozen = (root / SEEDS_DIR, root / REVIEWS_DIR)
     return sorted(
         path
         for path in root.rglob("*.md")
-        if not skip & set(path.relative_to(root).parts) and (root / SEEDS_DIR) not in path.parents
+        if not skip & set(path.relative_to(root).parts)
+        and not any(directory in path.parents for directory in frozen)
     )
 
 

@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 from typing import Annotated
 
+import httpx
 import typer
 
 from kiln import doctor as doctor_module
 from kiln import records as records_module
+from kiln import review as review_module
 from kiln.config import DEFAULT_CONFIG_PATH, load_config
 from kiln.errors import EXIT_FAILURE, KilnError
 
@@ -43,6 +46,62 @@ def doctor(
     typer.echo(doctor_module.render(checks, target))
     if doctor_module.blocking(checks, target):
         raise typer.Exit(EXIT_FAILURE)
+
+
+@app.command()
+def review(
+    spec: Annotated[Path, typer.Argument(help="The review spec (YAML), committed first.")],
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Build the request and estimate it. Sends nothing.")
+    ] = False,
+    confirm: Annotated[
+        bool, typer.Option("--confirm", help="Send the request. Spends money.")
+    ] = False,
+    print_request: Annotated[
+        bool, typer.Option("--print-request", help="With --dry-run: print the exact body.")
+    ] = False,
+    config_path: Annotated[
+        Path, typer.Option("--config", help="Config file.")
+    ] = DEFAULT_CONFIG_PATH,
+) -> None:
+    """Ask another provider's model for a second opinion on documents. Paid."""
+    if dry_run == confirm:
+        raise _fail("pass exactly one of --dry-run (free) or --confirm (spends money)")
+    root = Path()
+    try:
+        config = load_config(config_path)
+        the_plan = review_module.plan(spec, config, root)
+    except KilnError as exc:
+        raise _fail(exc.one_line()) from exc
+    left = the_plan.budget_usd - the_plan.spent_usd
+    typer.echo(
+        f"{spec}: request sha256:{the_plan.request_sha256[:12]}, "
+        f"{len(the_plan.request['input']):,} characters of input\n"
+        f"Estimate: up to ${the_plan.estimate.usd_bound:.4f} "
+        f"({the_plan.estimate.input_tokens_bound:,} input and "
+        f"{the_plan.estimate.output_tokens_bound:,} output tokens at most; assumes "
+        f"{the_plan.estimate.assumes})\n"
+        f"Budget {the_plan.budget!r}: ${the_plan.spent_usd:.4f} spent of "
+        f"${the_plan.budget_usd:.2f}, ${left:.4f} left"
+        + ("\nCached: re-running costs nothing." if the_plan.cached else "")
+    )
+    if dry_run:
+        if print_request:
+            typer.echo(json.dumps(the_plan.request, indent=2, ensure_ascii=False))
+        return
+    with httpx.Client(follow_redirects=False, trust_env=True) as client:
+        try:
+            record = review_module.run(the_plan, config, root, client)
+        except KilnError as exc:
+            raise _fail(exc.one_line()) from exc
+    page = spec.with_suffix(".md")
+    page.write_text(review_module.render(record), encoding="utf-8")
+    typer.echo(f"Status {record.status}; cost ${record.usd:.4f}. Wrote {page}.")
+    if record.status != "completed":
+        raise _fail(
+            f"the review did not complete ({record.incomplete_reason or record.status}); "
+            "its cost is recorded | see: " + str(page)
+        )
 
 
 @records_app.command("check")

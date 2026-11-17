@@ -64,3 +64,20 @@ services:
     purpose: Web search for discovery only; a search result is never evidence.
     needed_from_phase: 1
     env: [BRAVE_API_KEY]
+
+# Models Kiln may call. Prices are copied by hand from the provider's own page, with the date,
+# because no provider serves them through its API. A paid command refuses a request that would
+# go past `prices_valid_up_to_input_tokens`, where the provider charges a higher rate.
+models:
+  openai-reviewer:
+    service: openai
+    model: gpt-6.1-sol
+    effort: high
+    max_output_tokens: 32000
+    request_timeout_seconds: 900
+    usd_per_million_tokens: {input: 2.00, cached_input: 0.10, output: 10.00}
+    prices_valid_up_to_input_tokens: 272000
+    prices_checked: >-
+      2026-11-17, developers.openai.com/api/docs/pricing (standard tier, context up to 272K
+      tokens) and developers.openai.com/api/docs/models/gpt-6.1-sol (effort values low,
+      medium, high, xhigh, max)

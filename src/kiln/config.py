@@ -86,10 +86,62 @@ class Service(_Strict):
         return (auth.env,)
 
 
+Name = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_-]*$")]
+Usd = Annotated[float, Field(ge=0)]
+
+
+class Prices(_Strict):
+    """US dollars per million tokens, as the provider's own pricing page shows them."""
+
+    input: Usd
+    cached_input: Usd
+    output: Usd
+
+
+class Model(_Strict):
+    """A model Kiln may call, through a configured service.
+
+    Prices are copied from the provider's page by hand, with the date and page they came from,
+    because no provider serves them through its API. A paid command refuses a model whose
+    prices are not configured, so a spend can always be computed (SOP §14.1).
+    """
+
+    service: Name
+    model: Annotated[str, Field(pattern=r"^[a-z0-9][a-z0-9.-]*$")]
+    effort: Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"]
+    max_output_tokens: Annotated[int, Field(gt=0, le=200_000)]
+    request_timeout_seconds: Annotated[float, Field(gt=0, le=1800)] = 600.0
+    usd_per_million_tokens: Prices
+    prices_valid_up_to_input_tokens: Annotated[int, Field(gt=0)]
+    """Providers charge more above a context size. A request above it is refused, not
+    mispriced."""
+    prices_checked: str
+
+
+class Budget(_Strict):
+    """A cap in dollars that Tom set, with his words and the date. Code enforces it."""
+
+    usd: Annotated[float, Field(gt=0)]
+    approved: str
+
+
 class KilnConfig(_Strict):
     current_phase: Annotated[int, Field(ge=0, le=5)]
     probe_timeout_seconds: Annotated[float, Field(gt=0, le=60)] = 20.0
-    services: dict[Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]*$")], Service]
+    services: dict[Name, Service]
+    models: dict[Name, Model] = Field(default_factory=dict)
+    budgets: dict[Name, Budget] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _models_name_http_services(self) -> KilnConfig:
+        for name, model in self.models.items():
+            service = self.services.get(model.service)
+            if service is None or service.probe is None:
+                raise ValueError(
+                    f"model {name!r} names service {model.service!r}, "
+                    "which is not an HTTP service in `services`"
+                )
+        return self
 
 
 def load_config(path: Path = DEFAULT_CONFIG_PATH) -> KilnConfig:
