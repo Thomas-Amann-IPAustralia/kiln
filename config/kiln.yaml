@@ -81,3 +81,12 @@ models:
       2026-11-17, developers.openai.com/api/docs/pricing (standard tier, context up to 272K
       tokens) and developers.openai.com/api/docs/models/gpt-6.1-sol (effort values low,
       medium, high, xhigh, max)
+
+# Budgets in US dollars. Only Tom sets one; each carries his words and the date. Code enforces
+# it: a paid request starts only if the spend recorded so far plus its upper-bound estimate fits.
+budgets:
+  docs-second-opinion:
+    usd: 2.00
+    approved: >-
+      Tom, 2026-11-17: "Before I agree or disagree, I permit you to spend up to $2 on OpenAI
+      tokens to get a second opinion."
