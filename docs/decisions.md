@@ -751,13 +751,24 @@ ledger refuses a call that could pass a cap and warns at 80%.
 9. **CI runs on `ccr-**` branches** too, which is how this session's cloud branches are named
    (closes handover open item 10). A change to `.github/`, for Tom's review when he merges.
 
-**What the first scans found** (observed). OSV-Scanner and Trivy found nothing in the repo.
-Semgrep found 14 things in `src/`; I read each by hand. Thirteen are `medium` and wrong in
+**What the first scans found** (observed). Trivy found nothing in the repo. Semgrep found 14
+things in `src/`; I read each by hand. Thirteen are `medium` and wrong in
 context: nine implicit string joins in lists, which are deliberate; three reads of httpx's
 `is_success`, a property the rule takes for a method; and one regex that reads only Kiln's own
 files. One is `high`, in this slice's own code: `run_process` builds a scanner's command from
 config and fixed strings, with no shell. It is dismissed with that reason rather than rewritten
 to dodge the pattern.
+
+**Corrected after CI's first run.** This entry first said OSV-Scanner found nothing. That was
+true of my scan here, made before `.github/scanners/semgrep-requirements.txt` existed. CI's
+first full run (run 13, commit `026df7e`) read that file too, and failed on Semgrep's own
+dependencies: `mcp` 1.29.0 has one `high` advisory (CVE-2026-59951) and three `medium`, and
+`opentelemetry-api` 1.37.0 has two `medium` (observed; reproduced here, with the same keys).
+Every Semgrep release up to 1.186.0 pins `mcp==1.29.0` exactly, so no release can take the fix.
+All six concern code Kiln never runs: an MCP HTTP server, MCP client transports, and parsing of
+inbound trace headers. Kiln runs only `semgrep scan`. The `high` one is dismissed with that
+reason; the five `medium` ones do not block and are printed on every run. This is the
+mechanism doing what it is for: the job failed, the finding was read, and it was explained.
 
 **Checked.** `make check` passes: 273 tests (157 before), none touching the network. With the
 pinned binaries in this session, the three repo scans pass (Semgrep with one dismissal) and each
@@ -768,8 +779,10 @@ that ignores severity; the whole environment passed through; suppression files a
 code taken as a finished scan; no build-information check; dismissals applied to a seeded run; a
 Semgrep key by line number; an unknown severity word graded low; open reservations not counted;
 no 80% warning; the tripwire not enforced; a timeout settled at $0; the ledger not checked
-against responses; and CI's pins drifting from config. **Not checked here:** the `scanners` job
-on GitHub's runner. The handover records its first result.
+against responses; and CI's pins drifting from config. **On GitHub:** run 13 passed lint,
+types, tests, records and gitleaks; its `scanners` job built both Go tools in 4 minutes 12
+seconds, passed both Semgrep steps, and failed on the `mcp` advisory above. The run after this
+correction is the first expected to pass in full; the handover records its result.
 
 **Limits, stated plainly.** The ledger is a file in git, so it is per branch: two sessions on
 two branches could together pass a budget (for Tom under "These can wait"). Advisory data is

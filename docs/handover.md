@@ -40,8 +40,9 @@ read its settings, so which checks it requires is unverified.
     and Trivy v0.76.1 (both built from their Go modules), in CI job `scanners`. Each runs on the
     repo and on its seeded finding in `tests/seeded-findings/`, which it must detect. One
     finding format (`kiln.findings`), one severity scale, and one dismissal list,
-    [`config/dismissals.yaml`](../config/dismissals.yaml), which holds one entry. Critical, high
-    and unknown findings block.
+    [`config/dismissals.yaml`](../config/dismissals.yaml), which holds two entries: a Semgrep
+    finding in `kiln.scanners`, and a high advisory against Semgrep's own `mcp` dependency that
+    no Semgrep release can take the fix for yet. Critical, high and unknown findings block.
   - *Ledger:* [`docs/spend/ledger.jsonl`](spend/ledger.jsonl) (`kiln.spend`, `kiln spend`).
     Every paid call reserves its bound and settles at its cost; a call that could pass a cap is
     refused, and one that may reach 80% warns. `kiln review` uses it. It holds the three
@@ -106,7 +107,9 @@ read its settings, so which checks it requires is unverified.
     - The scanners' own reports are not kept as CI artifacts; the log holds Kiln's summary and
       each report's hash.
     - Semgrep's 13 medium findings in `src/` are printed on every run. D-013 read each and found
-      none real; they are not dismissed, because medium does not block.
+      none real; they are not dismissed, because medium does not block. The same goes for five
+      medium advisories against Semgrep's own `mcp` and `opentelemetry-api`, which wait for a
+      Semgrep release that moves those pins; the `mcp` dismissal goes stale when it does.
     - `unknown` blocks, an inferred reading of the charter. The Security Architect revisits the
       blocking set, and the severity mapping, in its first slice.
     - The `scanners` job builds two Go tools on every run (about six minutes). Cache them with
@@ -118,8 +121,8 @@ read its settings, so which checks it requires is unverified.
 You approved the phase 0 sketch (D-010) and merged slices 1 and 2, which put `CARD-0001` into
 effect. Slice 3 is built (D-013). Nothing blocks the next slice. When you are ready, ask for a
 pull request. Slice 3 changes the control plane, which you review when you merge: a new CI job,
-CI on `ccr-**` branches, the scanner pins in `config/kiln.yaml`, and one dismissal in
-`config/dismissals.yaml`.
+CI on `ccr-**` branches, the scanner pins in `config/kiln.yaml`, and two dismissals in
+`config/dismissals.yaml`, each with its reason.
 
 **These can wait.** Nothing is built on them until you answer.
 

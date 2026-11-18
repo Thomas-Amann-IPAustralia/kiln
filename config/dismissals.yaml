@@ -26,3 +26,17 @@ dismissals:
       pattern would hide the same code from the next reader, so it is dismissed here instead.
     by: build_session
     dismissed_on: 2026-11-18
+
+  - key: sha256:202700de1dd3cd1a8439f49378a67e1588348f7194acabeb403f615abd028a6d
+    scanner: osv-scanner
+    rule: CVE-2026-59951
+    path: .github/scanners/semgrep-requirements.txt
+    reason: >-
+      mcp 1.29.0 is a dependency of Semgrep, which pins it exactly (`mcp==1.29.0`) in every
+      release up to 1.186.0, so no Semgrep release takes the fixed 1.30.0. The advisory
+      (GHSA-84m7-p3x7-pcfv) is about an MCP Streamable HTTP server keeping sessions forever.
+      Kiln runs only `semgrep scan`, in CI, with metrics off; it never starts Semgrep's MCP
+      server, so the code is not reached. When Semgrep moves to a fixed mcp, this key no
+      longer matches and the dismissal is reported as stale.
+    by: build_session
+    dismissed_on: 2026-11-18
