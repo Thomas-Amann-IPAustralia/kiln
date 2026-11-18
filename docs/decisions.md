@@ -492,3 +492,30 @@ there.
 
 **Consequences. For Tom:** approve the sketch (handover, "For Tom" 1). Slice 1 needs no secret
 and no money.
+
+## D-010 — Tom approves the phase 0 build order; slice 1 starts (2026-11-18)
+
+**Context.** D-009 revised the phase 0 sketch and put it to Tom. On 2026-11-17 Tom reported
+that he had added the ruleset protecting `main` (ADR-0028). On 2026-11-18 he answered the
+sketch's card: "I approve the phase 0 build order. Please commence thoughtfully."
+
+**Decision (Tom).** The sketch is approved as it stood at commit `2fd52ad`, merged to `main` in
+pull request #2. This commit changes only its status line, to say so.
+
+- **The sketch is now frozen.** A change to it is a change to what Tom approved, so it falls in
+  the Tom band and goes back to him. Progress is tracked in the handover, not in the sketch.
+- **Merging the sketch was not the approval.** Pull request #2 put the sketch on `main` the day
+  before Tom answered. A merged question is not an answer. Slice 1 builds that distinction
+  into the decision card: an approval needs Tom's answer in the card *and* his merge.
+- **The ruleset.** GitHub reports `main` as protected (observed, 2026-11-17). This session
+  cannot read a ruleset's settings, so which checks it requires is unverified.
+
+**What changed with it.** The sketch's status line; `CLAUDE.md`'s current scope; the status of
+first move 4 in `docs/charter/build-plan.md`; the handover.
+
+**Spend:** $0.
+
+**Consequences.** Slice 1 starts: the enums, the id formats, `ProjectProfile`, the decision
+record and its store, the decision card and `kiln approvals`, and three synthetic sample
+briefs. When the card format exists, this approval is written as the first card, so that the
+mechanism is tested on a real decision.

@@ -1,7 +1,8 @@
 # Sketch: phase 0, the shared core
 
-**Status: proposed, revised for D-008 (D-009). Nothing here is built. For Tom to approve,
-change or replace.**
+**Status: approved by Tom on 2026-11-18 (D-010).** This is now an approved plan: a change to
+it is a change to what Tom approved, and goes back to him. Progress is tracked in the
+handover, not here.
 
 This is the SOP's design sketch (T5) for the charter's phase 0. The first version (D-005) was
 reviewed twice (D-006, D-007). Tom adopted five changes (D-008), and this version makes them:

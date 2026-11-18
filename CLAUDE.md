@@ -9,12 +9,12 @@ Tom's team a test-ready build; nothing reaches production before a real-world te
 experts. Tom is the owner and is not a subject-matter expert: the work must stand up to an
 expert's scrutiny without one in the room.
 
-**Current scope: phase 0 of 6 (the shared core). Nothing in the shared core is built yet.**
+**Current scope: phase 0 of 6 (the shared core), slice 1 of 9 in progress.**
 The repo holds the rulebook, the records, the live charter, CI, two free commands (`kiln
 doctor`, `kiln records check`) and one paid one (`kiln review`, a second opinion from another
-provider's model). The phase 0 sketch,
-[`docs/sketches/phase-0-shared-core.md`](docs/sketches/phase-0-shared-core.md), was revised
-for D-008 (D-009) and waits for Tom's approval; build slice 1 once he gives it. The only budget is
+provider's model). Tom approved the phase 0 sketch,
+[`docs/sketches/phase-0-shared-core.md`](docs/sketches/phase-0-shared-core.md), on 2026-11-18
+(D-010); build its slices in order, and treat the sketch as approved and frozen. The only budget is
 Tom's $2 for a second opinion on the docs ($0.38 spent, D-007); **no other paid call is
 approved**.
 
