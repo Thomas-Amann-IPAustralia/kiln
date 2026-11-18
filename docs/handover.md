@@ -3,14 +3,14 @@
 For the next Claude Code session. Read [`CLAUDE.md`](../CLAUDE.md) first. Build only what Tom
 asks for next; nothing that spends money is approved beyond the $2 second-opinion budget.
 
-**Status (2026-11-18):** phase 0. Tom approved the phase 0 sketch (D-010). Slices 1 and 2 of
-9 are built (D-011, D-012) on branch `ccr-d620ebdd-x20kar`, not yet merged; no pull request is
-open. D-001
-to D-009 are merged to `main` (pull request #2). `main` is protected by a ruleset
-Tom added (ADR-0028); GitHub reports the branch as protected, but this session cannot read the
-ruleset's settings, so which checks it requires is unverified.
+**Status (2026-11-18):** phase 0. Tom approved the phase 0 sketch (D-010). Slices 1 to 3 of 9
+are built. Slices 1 and 2 (D-011, D-012) are merged to `main` in pull request #3, which put
+`CARD-0001`, Tom's approval of the sketch, into effect: `kiln approvals` shows it approved at
+`5dd97e5` (observed). Slice 3 (D-013) is on branch `ccr-f57917ac-ixfj6f`, not yet merged; no
+pull request is open. `main` is protected by a ruleset Tom added (ADR-0028); this session cannot
+read its settings, so which checks it requires is unverified.
 
-**Next free decision number: D-013**
+**Next free decision number: D-014**
 
 ## Where things stand
 
@@ -18,29 +18,39 @@ ruleset's settings, so which checks it requires is unverified.
   (the engineering bar, for any coding agent).
 - **The design:** [`docs/charter/`](charter/README.md) is the live charter, split from the
   seed by script. [`docs/adr/`](adr/README.md) holds ADR-0001 to ADR-0026, the seed's
-  Appendix A, and ADR-0027 to ADR-0030, adopted in D-008. `GLOSSARY.md` holds 59 terms: 56
-  seeded, and *decision card*, *approval* and *build session* added in D-011.
+  Appendix A, and ADR-0027 to ADR-0030, adopted in D-008. `GLOSSARY.md` holds 63 terms: 56
+  seeded, three added in D-011 and four in D-013 (*spend ledger*, *severity*, *seeded finding*,
+  *dismissal*).
 - **The seeds** are sealed in `docs/repo-seeds/` with a hash manifest.
 - **Code:** `src/kiln/` has the config loader, `kiln doctor`, `kiln records check` and
-  `render`, `kiln review` and `kiln approvals`, with their tests. CI runs lint, format,
-  pyright, tests, the records check and gitleaks.
+  `render`, `kiln review`, `kiln approvals`, `kiln gates`, `kiln scan` and `kiln spend`, with
+  their tests (273). CI runs lint, format, pyright, tests, the records check, gitleaks and the
+  three scanners, on `main`, `claude/**` and `ccr-**` branches and on pull requests.
 - **Slice 1 (D-011):** the enums (`kiln.vocabulary`), the id formats (`kiln.ids`), the
   project profile (`kiln.profile`), decision records and their store
   (`kiln.decision_records`), decision cards (`kiln.cards`) and approvals read from history
   (`kiln.approvals`). Three synthetic sample briefs in `evals/sample-briefs/`, drafts until
-  Tom approves the set. The first card, [`docs/cards/`](cards/), records Tom's approval of
-  the sketch; it takes effect when he merges it.
+  Tom approves the set.
 - **Slice 2 (D-012):** the gates, G0 to G5 (`kiln.gates`, `kiln gates`), on LangGraph 1.2.19,
   with the artefacts each gate reads (`kiln.artefacts`). Passes are recomputed, never stored.
   Tom's gates pass on a decision card with a `gate` field, approved at the files' current
   hashes. LangSmith tracing is switched off in code.
+- **Slice 3 (D-013):** the scanner baseline and the spend ledger.
+  - *Scanners:* Semgrep CE 1.183.0 (rules from one `semgrep-rules` commit), OSV-Scanner v2.7.0
+    and Trivy v0.76.1 (both built from their Go modules), in CI job `scanners`. Each runs on the
+    repo and on its seeded finding in `tests/seeded-findings/`, which it must detect. One
+    finding format (`kiln.findings`), one severity scale, and one dismissal list,
+    [`config/dismissals.yaml`](../config/dismissals.yaml), which holds one entry. Critical, high
+    and unknown findings block.
+  - *Ledger:* [`docs/spend/ledger.jsonl`](spend/ledger.jsonl) (`kiln.spend`, `kiln spend`).
+    Every paid call reserves its bound and settles at its cost; a call that could pass a cap is
+    refused, and one that may reach 80% warns. `kiln review` uses it. It holds the three
+    reviews of D-007: $0.3792 of the $2 budget.
 - **Second opinion:** two OpenAI reviews of the docs, in `docs/reviews/2026-11-17-docs/`, for
   $0.38 of a $2 budget (D-007).
-  CI's first run passed both jobs on commit `8f4b596`, which is the first time the gitleaks
-  job ran anywhere (D-001 could not run it in the session).
-- **Not built:** slices 3 to 9 of the approved order,
-  [`docs/sketches/phase-0-shared-core.md`](sketches/phase-0-shared-core.md). Next is slice 3
-  (scanners and the spend ledger); 3, 4 and 9 need no money or secrets.
+- **Not built:** slices 4 to 9 of the approved order,
+  [`docs/sketches/phase-0-shared-core.md`](sketches/phase-0-shared-core.md). Slices 4 (tickets
+  and the verifier) and 9 (eval sets) need no money or secrets; slice 4 can be next.
 - **Reusable pieces:**
   - `kiln.errors.KilnError`: the one-line, exit-code-2 failure every command uses.
   - `kiln.config`: strict Pydantic config; copy its pattern for new config sections.
@@ -52,6 +62,9 @@ ruleset's settings, so which checks it requires is unverified.
   - `kiln.gates.validate(gate, workspace)`: one gate, from the files as they are now. The
     thin path in slice 6 calls this, not a stored pass.
   - `kiln.model.Record`, `Text`, `Unknown`: the base and field types every record uses.
+  - `kiln.spend.reserve` and `settle`: the only way a paid call spends. Slice 5's sandbox
+    reserves each run's cap here.
+  - `kiln.findings`: the finding format and its readers. A new scanner adds a reader here.
   - `tests/conftest.py`: the fixture that refuses sockets.
   - `kiln review`: a spec in, a cached and costed answer out. Use it for the cross-provider
     reviewer before G2 (ADR-0026) rather than writing a second client.
@@ -59,7 +72,7 @@ ruleset's settings, so which checks it requires is unverified.
 ## Open items
 
 1. **`kiln doctor` checks Neon, R2, Modal and Brave by key name only.** Each gains a live
-   check with its client, in slice 4 or 6 of the sketch.
+   check with its client, in slice 5 or 7 of the sketch.
 2. **The glossary is a seed, not a grilled glossary.** Expect the grilling session to rename
    terms; rename them everywhere in the same commit.
 3. **"Maturity target" in the chair's first slice** conflicts with ADR-0018 and ADR-0023
@@ -80,20 +93,33 @@ ruleset's settings, so which checks it requires is unverified.
    it means `fetch-depth: 0` in `.github/workflows/ci.yml`, a control-plane change for a pull
    request Tom reviews. `kiln gates` reads history the same way. Worth doing before slice 6,
    when a real solution starts to depend on them.
-10. **CI does not run on pushes to this session's branch.** The workflow runs on pushes to
-    `main` and `claude/**`, and on pull requests; this branch is `ccr-*`. CI runs once a pull
-    request is open. Every check it runs passed here.
-11. **The data kinds in the profile** are the Governance proposal's list plus `public` and
+10. **The data kinds in the profile** are the Governance proposal's list plus `public` and
     `internal`. The Governance Guru refines them in phase 2; the grilling may rename them.
-12. **LangGraph's packages are held to uploads before 2026-11-04** in `pyproject.toml`. To
-    upgrade one, move its date deliberately and review the lockfile diff (D-012). Slice 3's
-    OSV-Scanner will be the first scan of them.
+11. **LangGraph's packages are held to uploads before 2026-11-04** in `pyproject.toml`. To
+    upgrade one, move its date deliberately and review the lockfile diff (D-012). OSV-Scanner's
+    first scan of `uv.lock` found no known vulnerability (D-013).
+12. **What the scanners leave for later** (D-013):
+    - Trivy's vulnerability scanning is off, since it would repeat OSV-Scanner's on `uv.lock`;
+      turn it on when there is a container image to scan. Trivy does not write the CycloneDX
+      SBOM yet, which the Security Architect's charter gives it; it belongs with G4's
+      pre-release record.
+    - The scanners' own reports are not kept as CI artifacts; the log holds Kiln's summary and
+      each report's hash.
+    - Semgrep's 13 medium findings in `src/` are printed on every run. D-013 read each and found
+      none real; they are not dismissed, because medium does not block.
+    - `unknown` blocks, an inferred reading of the charter. The Security Architect revisits the
+      blocking set, and the severity mapping, in its first slice.
+    - The `scanners` job builds two Go tools on every run (about six minutes). Cache them with
+      `actions/cache` if the wait gets in the way.
+13. **The ledger's lock needs POSIX** (Linux, macOS). Every machine Kiln runs on is one today.
 
 ## For Tom
 
-You approved the phase 0 sketch (D-010), and slices 1 and 2 are built (D-011, D-012).
-Nothing blocks the next slice. When you are ready, ask for a pull request: merging it is what puts `CARD-0001`,
-your approval of the sketch, into effect.
+You approved the phase 0 sketch (D-010) and merged slices 1 and 2, which put `CARD-0001` into
+effect. Slice 3 is built (D-013). Nothing blocks the next slice. When you are ready, ask for a
+pull request. Slice 3 changes the control plane, which you review when you merge: a new CI job,
+CI on `ccr-**` branches, the scanner pins in `config/kiln.yaml`, and one dismissal in
+`config/dismissals.yaml`.
 
 **These can wait.** Nothing is built on them until you answer.
 
@@ -114,16 +140,25 @@ your approval of the sketch, into effect.
 6. **A budget** for phase 0's cents of sandbox and embedding calls, and an allowance for
     exploration. $1.62 of the second-opinion budget is unspent; it is kept for that purpose.
 7. **Evaluation policy:** the SOP chooses models on the test split (§20.5) but says "choose on
-    dev, report on test" (§12). *Recommended: choose on dev, always.* (D-007)
+    dev, report on test". *Recommended: choose on dev, always.* (D-007)
 8. **The model heuristics** in `CLAUDE.md` are the SOP's table. Still yours?
 9. **How approvals are made unforgeable,** before any loop runs unattended (ADR-0028): a
     separate GitHub identity for agents, or approvals signed with a key that never enters a
     cloud session. *Recommended: decide when the sketch's verifier slice is built.*
-10. **How you merge.** Use "Create a merge commit", as you did for pull request #2, or
-    "Squash and merge". "Rebase and merge" can make `kiln approvals` report an approval as
+10. **How you merge.** You used "Create a merge commit" for pull requests #2 and #3; keep to it,
+    or "Squash and merge". "Rebase and merge" can make `kiln approvals` report an approval as
     lapsed when it is not: safe, but noise. The ruleset can allow only the first two. (D-011)
 11. **The three sample briefs** in `evals/sample-briefs/`: approve them as the chair's first
     evaluation set, or ask for changes. Needed before phase 1's first run, not before.
+12. **Two risks found in slice 3, for your awareness.** Nothing is needed unless you disagree.
+    (D-013)
+    - *Trivy, which the charter names, shipped a malicious release in March 2026*
+      (CVE-2026-33634) that stole CI credentials. Kiln builds a later version from source,
+      checked by Go's checksum database, gives it no credentials, and uses it only to check
+      Dockerfiles and configuration. *Recommended: keep it on those terms.*
+    - *The spend ledger is per git branch.* Two sessions spending at once on two branches could
+      together pass a budget. *Recommended: fund one paid session at a time until slice 7 gives
+      the ledger a shared home.*
 
 ## Conventions to keep
 
@@ -134,3 +169,5 @@ your approval of the sketch, into effect.
   code block inside one (D-002).
 - A recommendation is not an adoption. The charter, the ADRs and the defaults move only on
   Tom's word, in a commit of their own.
+- A scanner finding is fixed, or dismissed in `config/dismissals.yaml` with a reason, never with
+  the scanner's own ignore files (D-013).

@@ -6,8 +6,8 @@ they all use. The Council hands over a test-ready build; nothing reaches product
 real-world test and human experts.
 
 **Status: phase 0 of 6.** The foundation is in place: the rulebook, the records, the live
-charter and CI. Two of the shared core's nine slices are built: the records and the decision
-card, and the gates. No agent is built yet.
+charter and CI. Three of the shared core's nine slices are built: the records and the decision
+card; the gates; and the scanner baseline with the spend ledger. No agent is built yet.
 
 ## Where to start
 
@@ -32,7 +32,9 @@ card, and the gates. No agent is built yet.
 | `docs/sketches/` | Designs proposed for Tom's approval |
 | `evals/` | Evaluation sets, starting with three synthetic sample briefs |
 | `docs/repo-seeds/` | The sealed planning documents everything above was derived from |
-| `config/kiln.yaml` | The outside services Kiln depends on, by phase |
+| `config/kiln.yaml` | The outside services, models, budgets and scanner pins Kiln depends on |
+| `config/dismissals.yaml` | Scanner findings set aside, each with its reason |
+| `docs/spend/` | The spend ledger: every paid call and its cost |
 | `src/kiln/`, `tests/` | The code and its tests |
 
 ## Commands
@@ -59,6 +61,14 @@ uv run kiln approvals       # which decision cards has Tom's merge approved, and
 
 ```bash
 uv run kiln gates --root SOLUTION   # which of a solution's gates, G0 to G5, pass now?
+```
+
+```bash
+uv run kiln spend           # where each budget stands, from the spend ledger
+```
+
+```bash
+uv run kiln scan trivy      # one pinned scanner, in Kiln's finding format; CI runs all three
 ```
 
 Only `kiln review --confirm` spends money, and only within a budget Tom has set in

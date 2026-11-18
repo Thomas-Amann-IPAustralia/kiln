@@ -83,6 +83,10 @@ _Avoid_: project brief, intake form
 One of four conditions that stop the affected work until Tom decides: real sensitive data in a build, an exposed secret, a real-world action before approval, or spend over budget.
 _Avoid_: hard constraint, blocker, hard gate
 
+**Spend ledger**:
+The record of every paid call: each call's upper-bound cost, reserved against a budget Tom set before the call is made, and its real cost once known.
+_Avoid_: cost log, billing
+
 **Obligation**:
 Something a law, policy or standard requires of this kind of solution. It is designed in by default.
 _Avoid_: requirement (when a legal or policy duty is meant), control
@@ -151,6 +155,16 @@ _Avoid_: context, reference
 
 **Finding**:
 What a check or a review observed about a solution. It is not a source, and not a decision.
+
+**Severity**:
+How bad a finding is, on one scale for every scanner: critical, high, medium, low or unknown. Unknown is not taken as small.
+
+**Seeded finding**:
+A finding planted on purpose in a fixture, so that a check can show its scanner still detects. A broken scanner's empty report otherwise looks like a clean one.
+
+**Dismissal**:
+A recorded decision to set one finding aside, with its reason, who made it and when. It covers that finding only, and stops applying when the code or package under it changes.
+_Avoid_: waiver; security exception (an exception to a control is Tom's decision)
 
 **Basis**:
 The label every claim carries for how it is known: observed, authoritative, rule, supported, inferred, assumed or unknown.

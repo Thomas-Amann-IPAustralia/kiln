@@ -133,7 +133,7 @@ scanners:
       commit: 16b9e6d45f10649f6a531ec4838ed9924372c3bc  # 2026-10-21
       packs: [python, yaml/github-actions]
     # Test code runs only in CI, with a read-only token. Semgrep skips tests by default; its
-    # audit rules gave four false positives on Kiln's tests in their first run (D-013).
+    # rules gave four false positives on Kiln's tests in their first run (D-013).
     exclude: [tests]
     seeded:
       target: tests/seeded-findings/semgrep
