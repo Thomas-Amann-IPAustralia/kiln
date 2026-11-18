@@ -41,5 +41,5 @@ The harness controls that keep Tom's environment safe arrive in phase 0, before 
 | 6 | Build the ingestion path once: fetch, hash, store in R2, normalise, index in Postgres full-text and pgvector, and register the source. | Not started. |
 | 7 | Add the tripwire checks (Gitleaks, real-data screening, egress closed to live systems, spend caps) and the scanner baseline (Semgrep CE, OSV-Scanner, Trivy). | Gitleaks runs in CI and pre-commit (D-001). The rest is not started. |
 | 8 | Wire LangGraph gates G0 to G5 as nodes that only validate artefacts. | Not started. |
-| 9 | Write three sample briefs with DVF hypotheses and proportionality profiles, and 20 golden research questions, as the first eval sets. | Not started. Claude drafts; Tom approves the sets before any run. |
+| 9 | Write three sample briefs with DVF hypotheses and proportionality profiles, and 20 golden research questions, as the first eval sets. | The three sample briefs are drafted in [`evals/sample-briefs/`](../../evals/sample-briefs/README.md) (D-011); the golden questions are slice 9. Tom approves the sets before any run. |
 | 10 | Run the first chair slice as HITL Ralph, and hand the ingestion adapters to AFK Ralph with an iteration cap. | Phase 1. |

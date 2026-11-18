@@ -519,3 +519,73 @@ first move 4 in `docs/charter/build-plan.md`; the handover.
 record and its store, the decision card and `kiln approvals`, and three synthetic sample
 briefs. When the card format exists, this approval is written as the first card, so that the
 mechanism is tested on a real decision.
+
+## D-011 — Slice 1 built: the record formats, the decision card and `kiln approvals` (2026-11-18)
+
+**Context.** Tom approved the phase 0 sketch (D-010). Slice 1 settles the contracts every
+later slice and agent consumes: the enums, the id formats, the project profile, the decision
+record, the decision card, and how an approval is read.
+
+**Decision (Claude; engineering inside the approved slice).** Each choice below that is not
+obvious, and why.
+
+1. **One file per record, and the file must be its own rendering.** A card or decision record
+   is YAML front matter (the record, which machines read) followed by Markdown rendered from
+   it (which Tom reads). A file is valid only if it is byte-for-byte what its record renders
+   to, so the two halves cannot disagree, and the file's hash names one exact version.
+   `kiln records render` turns a hand-edited front matter back into that form. The
+   alternative, a YAML file beside a Markdown file, doubles the files and lets them drift.
+2. **An approval needs Tom's answer in the card and his merge.** `kiln approvals` walks
+   `origin/main`'s first-parent history. A card is approved at the first commit there that
+   holds Tom's answer and in which every file it rests on matches the card's hash. A merged
+   card with no answer approves nothing (D-010). After approval, a change to the card or to a
+   file it rests on lapses the approval *even though Tom merged it*: an edit needs a new card
+   that supersedes the old one (ADR-0028), and lapsing loudly is how a quiet edit inside a
+   large merge is caught. `kiln records check` also refuses, before any commit, a card whose
+   files have changed, unless a later card supersedes it.
+3. **`origin/main`, not `main`.** A local `main` can hold commits nobody merged. The remote is
+   where Tom's merges land; the command fails loudly if it has not been fetched.
+4. **The profile states `unknown` and the basis of its sizing facts.** Every field is
+   required; `unknown` is a value. The three proportionality facts each carry a basis, and
+   `unknown` goes with basis `unknown` and only with it, so a guess cannot pass as known. The
+   data kinds are the Governance proposal's intake list, plus `public` and `internal`:
+   drafting the sample briefs showed that most government information is neither published
+   nor any of that list's kinds. Each expert's section and the other core facts arrive with
+   the expert that uses them; whether a profile is ready for G0 (for example, that its
+   hypotheses cover all of DVF) is the gate's check in slice 2, not the schema's.
+5. **The decision record keeps the glossary's fields** (actor, time, basis, dissent) and the
+   proposal's options, evidence, reversibility, consequences and supersession. Evidence is
+   required unless the basis is `assumed` or `unknown`; dissent is written by an expert other
+   than the one deciding. A record is never rewritten except to be marked superseded. Its
+   status uses *accepted*, not *approved*, which now means only Tom's approval. The chair's
+   architecture fields arrive as an extension in phase 1.
+6. **The id formats are types now;** trace names and the spend contract are typed in the
+   slices that first use them (7 and 3).
+7. **The decision card's answer date is `answered_on`, not `on`.** YAML 1.1 reads a bare `on`
+   key as the boolean `true`; a test of a hand-edited card caught it.
+
+**The first card.** Tom's approval of the sketch is written as `CARD-0001`. It rests on the
+sketch as it is now, with D-010's new status line; the diff from what Tom read at `2fd52ad` is
+that line alone. When Tom merges the pull request that holds it, `kiln approvals` will show it
+approved. Until then it reads "awaiting merge", which is correct.
+
+**The sample briefs** are drafted as three synthetic profiles in `evals/sample-briefs/`. They
+are fixtures until Tom approves them as an evaluation set (first move 9).
+
+**Checked.** `make check` passes: 135 tests, none touching the network. The approvals tests
+build real git repositories with real merge commits. Each of five deliberate breaks to
+`kiln approvals` (reading all history instead of first-parent, ignoring supersession,
+skipping the lapse check, approving an unanswered card, skipping the hash check at merge) made
+at least one test fail. **Not checked:** how GitHub renders a card's front matter; and the
+real history, because no card has been merged yet.
+
+**Limits, stated plainly.** `kiln approvals` reads history; it cannot tell Tom's merge from
+anyone else's push, so it rests on the ruleset. A rebase merge would replay each branch commit
+onto `main` and could show an approved card as edited: a false lapse, loud and safe, never a
+false approval. It is not in CI yet: CI's checkout is shallow and has no `origin/main`.
+
+**Spend:** $0.
+
+**Consequences.** Slice 2 (gates) and slice 4 (tickets and the verifier) can build on these
+records. For Tom: nothing new blocks. Two small items join the handover's list that can wait:
+the merge method, and the sample briefs.
