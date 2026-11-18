@@ -6,8 +6,8 @@ they all use. The Council hands over a test-ready build; nothing reaches product
 real-world test and human experts.
 
 **Status: phase 0 of 6.** The foundation is in place: the rulebook, the records, the live
-charter and CI. The shared core's first slice, its records and the decision card, is being
-built. No agent is built yet.
+charter and CI. Two of the shared core's nine slices are built: the records and the decision
+card, and the gates. No agent is built yet.
 
 ## Where to start
 
@@ -55,6 +55,10 @@ uv run kiln records check   # do the decision log, ADRs, handover, seeds, cards 
 
 ```bash
 uv run kiln approvals       # which decision cards has Tom's merge approved, and has any lapsed?
+```
+
+```bash
+uv run kiln gates --root SOLUTION   # which of a solution's gates, G0 to G5, pass now?
 ```
 
 Only `kiln review --confirm` spends money, and only within a budget Tom has set in

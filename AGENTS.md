@@ -82,7 +82,8 @@ money, and the command refuses to unless a budget Tom set covers it.
 
 `uv run kiln approvals` lists each decision card and whether Tom's merge has approved it, from
 `origin/main`'s history (fetch it first). `uv run kiln records render` rewrites a card after its
-front matter is edited by hand. Both are free.
+front matter is edited by hand. `uv run kiln gates --root SOLUTION` walks a solution's gates,
+G0 to G5, from its `council/` folder. All three are free.
 
 ## Conventions
 

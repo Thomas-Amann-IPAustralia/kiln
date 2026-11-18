@@ -22,6 +22,7 @@ if_no_answer: Nothing is built.
 rests_on:
 - path: docs/sketches/phase-0-shared-core.md
   sha256: sha256:4108af325f38e33c5021aac1d92c44c8ccfee48c5c5596a6d060cfab0438ac12
+gate: null
 supersedes: null
 answer:
   choice: Approve

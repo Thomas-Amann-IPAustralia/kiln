@@ -62,6 +62,9 @@ def _id_of(kind: RecordKind) -> AfterValidator:
 
 DecisionId = Annotated[str, _id_of(RecordKind.DECISION)]
 CardId = Annotated[str, _id_of(RecordKind.CARD)]
+ObligationId = Annotated[str, _id_of(RecordKind.OBLIGATION)]
+FindingId = Annotated[str, _id_of(RecordKind.FINDING)]
+TicketId = Annotated[str, _id_of(RecordKind.TICKET)]
 
 ContentHash = Annotated[str, Field(pattern=_CONTENT_HASH.pattern)]
 """`sha256:<hex>` of a file's exact bytes."""

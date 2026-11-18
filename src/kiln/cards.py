@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import re
 from datetime import date
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from typing import Annotated
 
 from pydantic import Field, field_validator, model_validator
@@ -25,8 +25,8 @@ from pydantic import Field, field_validator, model_validator
 from kiln import recordfile
 from kiln.errors import KilnError
 from kiln.ids import CardId, ContentHash, RecordKind, content_hash, parse_record_id, record_id
-from kiln.model import Record, Text
-from kiln.vocabulary import Actor
+from kiln.model import Record, RepoPath, Text
+from kiln.vocabulary import Actor, Gate
 
 CARDS_DIR = Path("docs/cards")
 _FILE = re.compile(r"^(CARD-\d{4,})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$")
@@ -62,17 +62,23 @@ class Undo(Record):
 class RestsOn(Record):
     """One file the decision rests on, at one exact version."""
 
-    path: Text
-    """Relative to the repository root, with forward slashes."""
+    path: RepoPath
     sha256: ContentHash
 
-    @field_validator("path")
+
+class GateDecision(Record):
+    """Marks a card as Tom's decision at one of his gates, and which answer passes it."""
+
+    gate: Gate
+    pass_option: OptionLabel
+    """The option that lets the solution through the gate, such as `Approve`."""
+
+    @field_validator("gate")
     @classmethod
-    def _repo_relative(cls, value: str) -> str:
-        pure = PurePosixPath(value)
-        if pure.is_absolute() or ".." in pure.parts or "\\" in value or str(pure) != value:
-            raise ValueError(f"must be a plain repo-relative path, not {value!r}")
-        return value
+    def _toms_gate(cls, gate: Gate) -> Gate:
+        if not gate.tom_decides:
+            raise ValueError(f"{gate.value} is passed by a validation node, not by Tom")
+        return gate
 
 
 class Answer(Record):
@@ -99,6 +105,8 @@ class DecisionCard(Record):
     if_no_answer: Text
     rests_on: Annotated[list[RestsOn], Field(min_length=1)]
     """Exactly what Tom is approving."""
+    gate: GateDecision | None = None
+    """Set when the card is Tom's decision at a gate (`kiln.gates`)."""
     supersedes: CardId | None = None
     answer: Answer | None = None
 
@@ -119,6 +127,8 @@ class DecisionCard(Record):
             raise ValueError("a file is listed twice in rests_on")
         if self.put_by is Actor.TOM:
             raise ValueError("a card is put to Tom, not by him")
+        if self.gate is not None and self.gate.pass_option not in labels:
+            raise ValueError(f"the gate's pass option {self.gate.pass_option!r} is not an option")
         if self.supersedes == self.id:
             raise ValueError("a card cannot supersede itself")
         return self
@@ -155,6 +165,12 @@ def render(card: DecisionCard) -> str:
     lines += ["| File | sha256 |", "| --- | --- |"]
     lines += [f"| `{r.path}` | `{r.sha256.removeprefix('sha256:')}` |" for r in card.rests_on]
     lines += [""]
+    if card.gate:
+        lines += [
+            f"**Gate.** This is Tom's decision at {card.gate.gate.value} "
+            f"({card.gate.gate.label}). Answering {card.gate.pass_option!r} passes it.",
+            "",
+        ]
     if card.supersedes:
         lines += [f"**Supersedes** {card.supersedes}.", ""]
     lines += [f"Put by {card.put_by.value} on {card.put_on.isoformat()}.", ""]

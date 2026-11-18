@@ -67,6 +67,11 @@ class CardApproval:
     card_sha256: str | None = None
     """The card's content hash when approved, or its current one if not approved."""
     choice: str | None = None
+    card: DecisionCard | None = None
+    """The approved version, or the latest one if not approved."""
+    card_edited: bool = False
+    """Lapsed because the card itself changed, not only a file it rests on. Its answer may
+    no longer be Tom's, so the approval holds for nothing."""
     notes: list[str] = field(default_factory=list[str])
     warnings: list[str] = field(default_factory=list[str])
     """Changes in the working tree that would lapse an approval if merged."""
@@ -197,7 +202,7 @@ def _read_version(git: _Git, state: _Tracked, tree: dict[str, str], commit: Comm
     except (KilnError, UnicodeDecodeError) as exc:
         result.status, result.notes, state.card = Status.INVALID, [f"not a valid card: {exc}"], None
         return
-    state.card = card
+    state.card = result.card = card
     result.card_id, result.title = card.id, card.title
     if card.answer is None:
         result.status, result.notes = Status.OPEN, []
@@ -224,7 +229,7 @@ def _check_unchanged(state: _Tracked, tree: dict[str, str], commit: Commit) -> N
     blob = tree.get(result.path)
     if blob != state.blob:
         what = "removed" if blob is None else "edited"
-        result.status = Status.LAPSED
+        result.status, result.card_edited = Status.LAPSED, True
         result.notes.append(f"the card was {what} after its approval, at {commit.sha[:7]}")
         return
     for path, rested in state.rested_blobs.items():
@@ -257,10 +262,10 @@ def _check_working_tree(
             answered_supersessions.add(card.supersedes)
         result = results.get(path)
         if result is None:
-            result = results[path] = CardApproval(path, card.id, card.title)
+            result = results[path] = CardApproval(path, card.id, card.title, card=card)
             result.card_sha256 = content_hash(data)
         if result.status is Status.OPEN and content_hash(data) != result.card_sha256:
-            result.card_id, result.title = card.id, card.title
+            result.card_id, result.title, result.card = card.id, card.title, card
             result.card_sha256 = content_hash(data)
         if result.status is Status.OPEN and card.answer is not None:
             result.status = Status.AWAITING_MERGE

@@ -9,9 +9,10 @@ Tom's team a test-ready build; nothing reaches production before a real-world te
 experts. Tom is the owner and is not a subject-matter expert: the work must stand up to an
 expert's scrutiny without one in the room.
 
-**Current scope: phase 0 of 6 (the shared core), slice 1 of 9 in progress.**
-The repo holds the rulebook, the records, the live charter, CI, two free commands (`kiln
-doctor`, `kiln records check`) and one paid one (`kiln review`, a second opinion from another
+**Current scope: phase 0 of 6 (the shared core). Slices 1 and 2 of 9 are built.**
+The repo holds the rulebook, the records, the live charter, CI, the record formats and decision
+cards (slice 1), the gates G0 to G5 (slice 2), the free commands (`kiln doctor`, `kiln records
+check` and `render`, `kiln approvals`, `kiln gates`) and one paid one (`kiln review`, a second opinion from another
 provider's model). Tom approved the phase 0 sketch,
 [`docs/sketches/phase-0-shared-core.md`](docs/sketches/phase-0-shared-core.md), on 2026-11-18
 (D-010); build its slices in order, and treat the sketch as approved and frozen. The only budget is

@@ -27,6 +27,10 @@ hypotheses:
     measure: >-
       The dashboard's figures for a past month match the figures in that month's hand-built
       spreadsheet.
+  - id: H3
+    dimension: viability
+    statement: The dashboard costs less to build and run than the two days a month it saves.
+    measure: unknown
 proportionality:
   who_uses:
     value: [toms_team]
