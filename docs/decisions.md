@@ -492,3 +492,169 @@ there.
 
 **Consequences. For Tom:** approve the sketch (handover, "For Tom" 1). Slice 1 needs no secret
 and no money.
+
+## D-010 — Tom approves the phase 0 build order; slice 1 starts (2026-11-18)
+
+**Context.** D-009 revised the phase 0 sketch and put it to Tom. On 2026-11-17 Tom reported
+that he had added the ruleset protecting `main` (ADR-0028). On 2026-11-18 he answered the
+sketch's card: "I approve the phase 0 build order. Please commence thoughtfully."
+
+**Decision (Tom).** The sketch is approved as it stood at commit `2fd52ad`, merged to `main` in
+pull request #2. This commit changes only its status line, to say so.
+
+- **The sketch is now frozen.** A change to it is a change to what Tom approved, so it falls in
+  the Tom band and goes back to him. Progress is tracked in the handover, not in the sketch.
+- **Merging the sketch was not the approval.** Pull request #2 put the sketch on `main` the day
+  before Tom answered. A merged question is not an answer. Slice 1 builds that distinction
+  into the decision card: an approval needs Tom's answer in the card *and* his merge.
+- **The ruleset.** GitHub reports `main` as protected (observed, 2026-11-17). This session
+  cannot read a ruleset's settings, so which checks it requires is unverified.
+
+**What changed with it.** The sketch's status line; `CLAUDE.md`'s current scope; the status of
+first move 4 in `docs/charter/build-plan.md`; the handover.
+
+**Spend:** $0.
+
+**Consequences.** Slice 1 starts: the enums, the id formats, `ProjectProfile`, the decision
+record and its store, the decision card and `kiln approvals`, and three synthetic sample
+briefs. When the card format exists, this approval is written as the first card, so that the
+mechanism is tested on a real decision.
+
+## D-011 — Slice 1 built: the record formats, the decision card and `kiln approvals` (2026-11-18)
+
+**Context.** Tom approved the phase 0 sketch (D-010). Slice 1 settles the contracts every
+later slice and agent consumes: the enums, the id formats, the project profile, the decision
+record, the decision card, and how an approval is read.
+
+**Decision (Claude; engineering inside the approved slice).** Each choice below that is not
+obvious, and why.
+
+1. **One file per record, and the file must be its own rendering.** A card or decision record
+   is YAML front matter (the record, which machines read) followed by Markdown rendered from
+   it (which Tom reads). A file is valid only if it is byte-for-byte what its record renders
+   to, so the two halves cannot disagree, and the file's hash names one exact version.
+   `kiln records render` turns a hand-edited front matter back into that form. The
+   alternative, a YAML file beside a Markdown file, doubles the files and lets them drift.
+2. **An approval needs Tom's answer in the card and his merge.** `kiln approvals` walks
+   `origin/main`'s first-parent history. A card is approved at the first commit there that
+   holds Tom's answer and in which every file it rests on matches the card's hash. A merged
+   card with no answer approves nothing (D-010). After approval, a change to the card or to a
+   file it rests on lapses the approval *even though Tom merged it*: an edit needs a new card
+   that supersedes the old one (ADR-0028), and lapsing loudly is how a quiet edit inside a
+   large merge is caught. `kiln records check` also refuses, before any commit, a card whose
+   files have changed, unless a later card supersedes it.
+3. **`origin/main`, not `main`.** A local `main` can hold commits nobody merged. The remote is
+   where Tom's merges land; the command fails loudly if it has not been fetched.
+4. **The profile states `unknown` and the basis of its sizing facts.** Every field is
+   required; `unknown` is a value. The three proportionality facts each carry a basis, and
+   `unknown` goes with basis `unknown` and only with it, so a guess cannot pass as known. The
+   data kinds are the Governance proposal's intake list, plus `public` and `internal`:
+   drafting the sample briefs showed that most government information is neither published
+   nor any of that list's kinds. Each expert's section and the other core facts arrive with
+   the expert that uses them; whether a profile is ready for G0 (for example, that its
+   hypotheses cover all of DVF) is the gate's check in slice 2, not the schema's.
+5. **The decision record keeps the glossary's fields** (actor, time, basis, dissent) and the
+   proposal's options, evidence, reversibility, consequences and supersession. Evidence is
+   required unless the basis is `assumed` or `unknown`; dissent is written by an expert other
+   than the one deciding. A record is never rewritten except to be marked superseded. Its
+   status uses *accepted*, not *approved*, which now means only Tom's approval. The chair's
+   architecture fields arrive as an extension in phase 1.
+6. **The id formats are types now;** trace names and the spend contract are typed in the
+   slices that first use them (7 and 3).
+7. **The decision card's answer date is `answered_on`, not `on`.** YAML 1.1 reads a bare `on`
+   key as the boolean `true`; a test of a hand-edited card caught it.
+
+**The first card.** Tom's approval of the sketch is written as `CARD-0001`. It rests on the
+sketch as it is now, with D-010's new status line; the diff from what Tom read at `2fd52ad` is
+that line alone. When Tom merges the pull request that holds it, `kiln approvals` will show it
+approved. Until then it reads "awaiting merge", which is correct.
+
+**The sample briefs** are drafted as three synthetic profiles in `evals/sample-briefs/`. They
+are fixtures until Tom approves them as an evaluation set (first move 9).
+
+**Checked.** `make check` passes: 135 tests, none touching the network. The approvals tests
+build real git repositories with real merge commits. Each of five deliberate breaks to
+`kiln approvals` (reading all history instead of first-parent, ignoring supersession,
+skipping the lapse check, approving an unanswered card, skipping the hash check at merge) made
+at least one test fail. **Not checked:** how GitHub renders a card's front matter; and the
+real history, because no card has been merged yet.
+
+**Limits, stated plainly.** `kiln approvals` reads history; it cannot tell Tom's merge from
+anyone else's push, so it rests on the ruleset. A rebase merge would replay each branch commit
+onto `main` and could show an approved card as edited: a false lapse, loud and safe, never a
+false approval. It is not in CI yet: CI's checkout is shallow and has no `origin/main`.
+
+**Spend:** $0.
+
+**Consequences.** Slice 2 (gates) and slice 4 (tickets and the verifier) can build on these
+records. For Tom: nothing new blocks. Two small items join the handover's list that can wait:
+the merge method, and the sample briefs.
+
+## D-012 — Slice 2 built: the gates, G0 to G5, on LangGraph (2026-11-18)
+
+**Context.** Tom asked for the next slice. Slice 2 of the approved sketch (D-010) builds "G0 to
+G5 as a LangGraph state machine whose nodes only validate artefacts", checked by four things:
+a sample brief walks G0 to G5 on fixture artefacts; a missing artefact fails its gate; a pass
+written from outside the validation node is refused; a plan edited after approval fails G2.
+
+**Decision (Claude; engineering inside the approved slice).**
+
+1. **LangGraph, as the approved sketch and the charter name it, pinned and held back.**
+   LangGraph 1.2.19 (30 October). It adds 26 packages to the lockfile, among them
+   `langchain-core`, `langsmith`, `requests` and `websockets`; no existing package changed
+   version. Each new package is held to releases uploaded before 4 November, two weeks before
+   today, in `pyproject.toml`'s `[tool.uv.exclude-newer-package]`, so a release in the window
+   in which bad ones are usually caught cannot slip in through a later `uv lock`. A first try
+   applied the cutoff to every package; it downgraded three existing ones and wrote a
+   repo-wide rule into the lockfile, which would bind every agent, so it was reverted.
+   *What LangGraph buys today is small:* six nodes in a line, a checkpointer, and
+   `update_state`. The gate logic is plain functions under it (`kiln.gates.validate`), so the
+   machine is a thin shell, cheap to replace if phase 1's agent nodes do not need it.
+2. **Tracing through LangGraph is switched off in code** (observed). With
+   `LANGSMITH_TRACING=true` in the environment, a plain LangGraph run posted its state to
+   `api.smith.langchain.com` (this session's proxy refused it with a 403). Gate state names a
+   solution's files, so every run is wrapped in `tracing_context(enabled=False)`, and a test
+   sets both tracing variables and checks that no gate runs with tracing on. Kiln's tracer is
+   Langfuse, in slice 7.
+3. **A pass is never trusted, only recomputed.** Every gate is evaluated from the files and
+   `origin/main`'s history as they are now; nothing about a pass is stored to be believed.
+   Before a node validates its gate, it re-validates every pass already in the run's state and
+   refuses one that does not hold. A pass injected through `update_state`, posing as the G1
+   node, is refused at G2.
+4. **Tom's gates need a gate card.** A decision card gains an optional `gate` field: which of
+   Tom's gates it decides, and which option passes it. A Tom gate passes when an approved card
+   answered with that option rests on the gate's files *at their current hashes*. Two rules
+   follow, each tested:
+   - *Tom's latest approval of a file counts for every earlier gate that needs it.* The G2
+     card rests on the profile as it stands at G2, so G0 does not need a fresh card each time
+     the profile gains a measure.
+   - *A lapsed approval still covers the files that did not change,* unless the card itself
+     was edited, when it covers nothing. Without this, a plan edit lapsed the G2 card and the
+     run blamed G0, the wrong gate.
+5. **Four states, one exit rule.** A gate is `passed`, `awaiting Tom`, `incomplete` (an
+   artefact does not exist yet) or `failed`. `kiln gates` exits 2 only on `failed`: waiting for
+   work or for Tom is normal.
+6. **Each gate's artefact holds only what its checks read** (`kiln.artefacts`): an
+   applicability register, a plan with its review and estimate, a build record, a pre-release
+   record, and the real-world test's findings. Their owners extend them when built.
+
+**Readings of the charter (inferred), for Tom with the gate table (handover, "These can
+wait", 1).** G0 requires hypotheses covering desirability, viability and feasibility. G1
+requires only a valid register: it does not yet require the profile's `unknown`s to be
+resolved, which is the Governance Guru's call in phase 2. G3 trusts `build.yaml`, which is
+written by hand until slice 4 makes the verifier its only writer.
+
+**Also changed.** The data dashboard sample brief gained a viability hypothesis, since G0 now
+needs one. `CARD-0001` was re-rendered with the new `gate: null` field; it is not merged, so no
+approval is affected.
+
+**Checked.** `make check` passes: 157 tests, none touching the network. The walk runs a sample
+brief through five real merges and four of Tom's cards. Each of six deliberate breaks (no
+re-confirmation, no tracing guard, coverage ignoring hashes, only same-gate cards counting,
+an edited card still counting, Tom's gates needing no card) made at least one test fail.
+**Not checked:** a real solution, which slice 6 brings; LangGraph on CI's runner.
+
+**Spend:** $0.
+
+**Consequences.** Slice 3 (scanners and the spend ledger) is next. Slice 4 makes the verifier
+the only writer of G3's ticket results.

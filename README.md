@@ -6,7 +6,8 @@ they all use. The Council hands over a test-ready build; nothing reaches product
 real-world test and human experts.
 
 **Status: phase 0 of 6.** The foundation is in place: the rulebook, the records, the live
-charter and CI. No part of the shared core or any agent is built yet.
+charter and CI. Two of the shared core's nine slices are built: the records and the decision
+card, and the gates. No agent is built yet.
 
 ## Where to start
 
@@ -27,7 +28,9 @@ charter and CI. No part of the shared core or any agent is built yet.
 | `docs/adr/` | The rulings behind the design, ADR-0001 onwards |
 | `docs/decisions.md` | The log of what was decided, measured and spent while building Kiln |
 | `docs/handover.md` | Where things stand, and what is open |
+| `docs/cards/` | Decision cards: each decision put to Tom, and his answer |
 | `docs/sketches/` | Designs proposed for Tom's approval |
+| `evals/` | Evaluation sets, starting with three synthetic sample briefs |
 | `docs/repo-seeds/` | The sealed planning documents everything above was derived from |
 | `config/kiln.yaml` | The outside services Kiln depends on, by phase |
 | `src/kiln/`, `tests/` | The code and its tests |
@@ -47,7 +50,15 @@ make doctor   # is this machine ready for the current phase? Free; spends nothin
 ```
 
 ```bash
-uv run kiln records check   # do the decision log, ADRs, handover, seeds and links agree?
+uv run kiln records check   # do the decision log, ADRs, handover, seeds, cards and links agree?
+```
+
+```bash
+uv run kiln approvals       # which decision cards has Tom's merge approved, and has any lapsed?
+```
+
+```bash
+uv run kiln gates --root SOLUTION   # which of a solution's gates, G0 to G5, pass now?
 ```
 
 Only `kiln review --confirm` spends money, and only within a budget Tom has set in

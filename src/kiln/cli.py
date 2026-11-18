@@ -10,7 +10,10 @@ from typing import Annotated
 import httpx
 import typer
 
+from kiln import approvals as approvals_module
+from kiln import cards as cards_module
 from kiln import doctor as doctor_module
+from kiln import gates as gates_module
 from kiln import records as records_module
 from kiln import review as review_module
 from kiln.config import DEFAULT_CONFIG_PATH, load_config
@@ -102,6 +105,65 @@ def review(
             f"the review did not complete ({record.incomplete_reason or record.status}); "
             "its cost is recorded | see: " + str(page)
         )
+
+
+@records_app.command("render")
+def records_render(
+    root: Annotated[Path, typer.Option(help="Repo root.")] = Path(),
+) -> None:
+    """Rewrite each decision card as its canonical rendering, after editing its front matter."""
+    try:
+        changed = cards_module.render_cards(root)
+    except KilnError as exc:
+        raise _fail(exc.one_line()) from exc
+    for path in changed:
+        typer.echo(f"rendered {path}")
+    if not changed:
+        typer.echo("Every card is already its rendering.")
+
+
+@app.command()
+def approvals(
+    ref: Annotated[
+        str, typer.Option(help="The branch Tom merges into. Fetch it first.")
+    ] = approvals_module.DEFAULT_REF,
+    root: Annotated[Path, typer.Option(help="Repo root.")] = Path(),
+) -> None:
+    """List each decision card: open, awaiting Tom's merge, approved, lapsed or superseded.
+    Exits 2 if an approval has lapsed, or a change here would lapse one. Free."""
+    try:
+        results = approvals_module.read_approvals(root, ref)
+    except KilnError as exc:
+        raise _fail(exc.one_line()) from exc
+    typer.echo(approvals_module.render(results, ref))
+    flagged = [result.card_id or result.path for result in results if result.needs_action]
+    if flagged:
+        raise _fail(
+            f"{len(flagged)} card(s) need a new card or a fix: {', '.join(flagged)} | "
+            "see: docs/adr/0028-only-tom-approves-or-merges.md"
+        )
+
+
+@app.command()
+def gates(
+    council: Annotated[
+        Path, typer.Option(help="The solution's council folder.")
+    ] = gates_module.COUNCIL_DIR,
+    ref: Annotated[
+        str, typer.Option(help="The branch Tom merges into. Fetch it first.")
+    ] = approvals_module.DEFAULT_REF,
+    root: Annotated[Path, typer.Option(help="The solution's repo root.")] = Path(),
+) -> None:
+    """Walk a solution's gates, G0 to G5, from its files and history as they are now.
+    Exits 2 if a gate failed; waiting for work or for Tom is not a failure. Free."""
+    try:
+        outcomes = gates_module.run_gates(root, council, ref)
+    except KilnError as exc:
+        raise _fail(exc.one_line()) from exc
+    typer.echo(gates_module.render(outcomes))
+    failed = [o.gate.value for o in outcomes if o.status is gates_module.GateStatus.FAILED]
+    if failed:
+        raise _fail(f"{', '.join(failed)} failed | see: src/kiln/gates.py")
 
 
 @records_app.command("check")

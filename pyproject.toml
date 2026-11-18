@@ -7,6 +7,7 @@ license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
     "httpx>=0.28",
+    "langgraph==1.2.19",
     "pydantic>=2.11",
     "pyyaml>=6.0",
     "typer>=0.15",
@@ -30,6 +31,39 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/kiln"]
+
+[tool.uv]
+
+# The packages LangGraph brought in (D-012) were resolved to releases at least two weeks old
+# when added, to stay out of the window in which a bad release is usually caught. Raising one
+# is a deliberate edit here, reviewed with the lockfile.
+
+[tool.uv.exclude-newer-package]
+"charset-normalizer" = "2026-11-04T00:00:00Z"
+distro = "2026-11-04T00:00:00Z"
+httpcore2 = "2026-11-04T00:00:00Z"
+httpx2 = "2026-11-04T00:00:00Z"
+jsonpatch = "2026-11-04T00:00:00Z"
+jsonpointer = "2026-11-04T00:00:00Z"
+"langchain-core" = "2026-11-04T00:00:00Z"
+"langchain-protocol" = "2026-11-04T00:00:00Z"
+langgraph = "2026-11-04T00:00:00Z"
+"langgraph-checkpoint" = "2026-11-04T00:00:00Z"
+"langgraph-prebuilt" = "2026-11-04T00:00:00Z"
+"langgraph-sdk" = "2026-11-04T00:00:00Z"
+langsmith = "2026-11-04T00:00:00Z"
+orjson = "2026-11-04T00:00:00Z"
+ormsgpack = "2026-11-04T00:00:00Z"
+requests = "2026-11-04T00:00:00Z"
+"requests-toolbelt" = "2026-11-04T00:00:00Z"
+sniffio = "2026-11-04T00:00:00Z"
+tenacity = "2026-11-04T00:00:00Z"
+truststore = "2026-11-04T00:00:00Z"
+urllib3 = "2026-11-04T00:00:00Z"
+"uuid-utils" = "2026-11-04T00:00:00Z"
+websockets = "2026-11-04T00:00:00Z"
+xxhash = "2026-11-04T00:00:00Z"
+zstandard = "2026-11-04T00:00:00Z"
 
 [tool.ruff]
 line-length = 100

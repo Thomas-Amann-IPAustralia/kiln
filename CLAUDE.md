@@ -9,12 +9,13 @@ Tom's team a test-ready build; nothing reaches production before a real-world te
 experts. Tom is the owner and is not a subject-matter expert: the work must stand up to an
 expert's scrutiny without one in the room.
 
-**Current scope: phase 0 of 6 (the shared core). Nothing in the shared core is built yet.**
-The repo holds the rulebook, the records, the live charter, CI, two free commands (`kiln
-doctor`, `kiln records check`) and one paid one (`kiln review`, a second opinion from another
-provider's model). The phase 0 sketch,
-[`docs/sketches/phase-0-shared-core.md`](docs/sketches/phase-0-shared-core.md), was revised
-for D-008 (D-009) and waits for Tom's approval; build slice 1 once he gives it. The only budget is
+**Current scope: phase 0 of 6 (the shared core). Slices 1 and 2 of 9 are built.**
+The repo holds the rulebook, the records, the live charter, CI, the record formats and decision
+cards (slice 1), the gates G0 to G5 (slice 2), the free commands (`kiln doctor`, `kiln records
+check` and `render`, `kiln approvals`, `kiln gates`) and one paid one (`kiln review`, a second opinion from another
+provider's model). Tom approved the phase 0 sketch,
+[`docs/sketches/phase-0-shared-core.md`](docs/sketches/phase-0-shared-core.md), on 2026-11-18
+(D-010); build its slices in order, and treat the sketch as approved and frozen. The only budget is
 Tom's $2 for a second opinion on the docs ($0.38 spent, D-007); **no other paid call is
 approved**.
 
@@ -83,6 +84,11 @@ block the next step first, and mark the rest as able to wait. For each, give a d
 - whether it can be undone, and what happens if Tom does not answer;
 - exactly what he is approving: the file and its commit, or the record and its hash.
 
+When Tom answers, write the card as a file in `docs/cards/`: fill in its front matter, put his
+answer in his own words, and run `uv run kiln records render`. His merge of that card is the
+approval (ADR-0028); `uv run kiln approvals` lists every card and flags one whose approval has
+lapsed. A change to anything an approved card rests on needs a new card that supersedes it.
+
 **The friction log.** When Tom needs something explained twice, asks what a term means,
 reverses a decision he misread, or answers a different question from the one asked, add one
 line to [`docs/friction-log.md`](docs/friction-log.md) in that turn.
@@ -124,7 +130,8 @@ measured and adopted (D-005, F2).
 | Handover | [`docs/handover.md`](docs/handover.md) | One note, kept current as a whole. Close the items an update settles in the same commit. |
 | Glossary | [`GLOSSARY.md`](GLOSSARY.md) | The one vocabulary. No implementation detail. |
 | Friction log | [`docs/friction-log.md`](docs/friction-log.md) | One line each time Tom and Kiln miss each other. |
-| Sketches | `docs/sketches/` | A design proposed for Tom's approval before a major component is built. |
+| Decision cards | `docs/cards/`, `CARD-NNNN` | Each decision put to Tom, with his answer once given. Never edited after approval: superseded by a new card. |
+| Sketches | `docs/sketches/` | A design proposed for Tom's approval before a major component is built. Frozen once approved. |
 | Reviews | `docs/reviews/` | Second opinions: the spec, the answer and the cached response with its cost. |
 | Seeds | `docs/repo-seeds/` | Sealed inputs, with a hash manifest. |
 

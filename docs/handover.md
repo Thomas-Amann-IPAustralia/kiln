@@ -1,12 +1,16 @@
 # Handover: Kiln
 
 For the next Claude Code session. Read [`CLAUDE.md`](../CLAUDE.md) first. Build only what Tom
-asks for next; nothing that spends money is approved, because no budget is set.
+asks for next; nothing that spends money is approved beyond the $2 second-opinion budget.
 
-**Status (2026-11-17):** phase 0. Kickoff done, reviewed twice, and five recommendations adopted. Recorded in D-001 to D-009, on branch
-`claude/loving-johnson-8yysoc`. No pull request is open; Tom has not asked for one.
+**Status (2026-11-18):** phase 0. Tom approved the phase 0 sketch (D-010). Slices 1 and 2 of
+9 are built (D-011, D-012) on branch `ccr-d620ebdd-x20kar`, not yet merged; no pull request is
+open. D-001
+to D-009 are merged to `main` (pull request #2). `main` is protected by a ruleset
+Tom added (ADR-0028); GitHub reports the branch as protected, but this session cannot read the
+ruleset's settings, so which checks it requires is unverified.
 
-**Next free decision number: D-010**
+**Next free decision number: D-013**
 
 ## Where things stand
 
@@ -14,22 +18,40 @@ asks for next; nothing that spends money is approved, because no budget is set.
   (the engineering bar, for any coding agent).
 - **The design:** [`docs/charter/`](charter/README.md) is the live charter, split from the
   seed by script. [`docs/adr/`](adr/README.md) holds ADR-0001 to ADR-0026, the seed's
-  Appendix A. `GLOSSARY.md` holds 56 seeded terms.
+  Appendix A, and ADR-0027 to ADR-0030, adopted in D-008. `GLOSSARY.md` holds 59 terms: 56
+  seeded, and *decision card*, *approval* and *build session* added in D-011.
 - **The seeds** are sealed in `docs/repo-seeds/` with a hash manifest.
 - **Code:** `src/kiln/` has the config loader, `kiln doctor`, `kiln records check` and
-  `kiln review`, with their tests. CI runs lint, format, pyright, tests, the records check and
-  gitleaks.
+  `render`, `kiln review` and `kiln approvals`, with their tests. CI runs lint, format,
+  pyright, tests, the records check and gitleaks.
+- **Slice 1 (D-011):** the enums (`kiln.vocabulary`), the id formats (`kiln.ids`), the
+  project profile (`kiln.profile`), decision records and their store
+  (`kiln.decision_records`), decision cards (`kiln.cards`) and approvals read from history
+  (`kiln.approvals`). Three synthetic sample briefs in `evals/sample-briefs/`, drafts until
+  Tom approves the set. The first card, [`docs/cards/`](cards/), records Tom's approval of
+  the sketch; it takes effect when he merges it.
+- **Slice 2 (D-012):** the gates, G0 to G5 (`kiln.gates`, `kiln gates`), on LangGraph 1.2.19,
+  with the artefacts each gate reads (`kiln.artefacts`). Passes are recomputed, never stored.
+  Tom's gates pass on a decision card with a `gate` field, approved at the files' current
+  hashes. LangSmith tracing is switched off in code.
 - **Second opinion:** two OpenAI reviews of the docs, in `docs/reviews/2026-11-17-docs/`, for
   $0.38 of a $2 budget (D-007).
   CI's first run passed both jobs on commit `8f4b596`, which is the first time the gitleaks
   job ran anywhere (D-001 could not run it in the session).
-- **Not built:** every component of the shared core. The proposed order is
-  [`docs/sketches/phase-0-shared-core.md`](sketches/phase-0-shared-core.md).
+- **Not built:** slices 3 to 9 of the approved order,
+  [`docs/sketches/phase-0-shared-core.md`](sketches/phase-0-shared-core.md). Next is slice 3
+  (scanners and the spend ledger); 3, 4 and 9 need no money or secrets.
 - **Reusable pieces:**
   - `kiln.errors.KilnError`: the one-line, exit-code-2 failure every command uses.
   - `kiln.config`: strict Pydantic config; copy its pattern for new config sections.
   - `kiln.doctor.run_checks`: add a service in `config/kiln.yaml`, not in code.
   - `kiln.records.check_all`: add a check here when a new kind of record appears.
+  - `kiln.recordfile`: one file per record, front matter then rendering. Use it for tickets,
+    findings and obligations rather than a new format.
+  - `kiln.approvals.read_approvals`: every card's approval, read from history.
+  - `kiln.gates.validate(gate, workspace)`: one gate, from the files as they are now. The
+    thin path in slice 6 calls this, not a stored pass.
+  - `kiln.model.Record`, `Text`, `Unknown`: the base and field types every record uses.
   - `tests/conftest.py`: the fixture that refuses sockets.
   - `kiln review`: a spec in, a cached and costed answer out. Use it for the cross-provider
     reviewer before G2 (ADR-0026) rather than writing a second client.
@@ -52,43 +74,56 @@ asks for next; nothing that spends money is approved, because no budget is set.
    the first request's exactly. Under OpenAI's default caching both paid the write premium for
    nothing (about $0.056). Before the next multi-request review, smoke-test documents and
    question as separate input items (D-007).
+8. **G3 trusts `build.yaml` until slice 4.** Its ticket results are written by hand until the
+   verifier becomes their only writer (ADR-0027). No real solution uses the gates before then.
+9. **`kiln approvals` is not in CI.** CI's checkout is shallow and has no `origin/main`. Adding
+   it means `fetch-depth: 0` in `.github/workflows/ci.yml`, a control-plane change for a pull
+   request Tom reviews. `kiln gates` reads history the same way. Worth doing before slice 6,
+   when a real solution starts to depend on them.
+10. **CI does not run on pushes to this session's branch.** The workflow runs on pushes to
+    `main` and `claude/**`, and on pull requests; this branch is `ccr-*`. CI runs once a pull
+    request is open. Every check it runs passed here.
+11. **The data kinds in the profile** are the Governance proposal's list plus `public` and
+    `internal`. The Governance Guru refines them in phase 2; the grilling may rename them.
+12. **LangGraph's packages are held to uploads before 2026-11-04** in `pyproject.toml`. To
+    upgrade one, move its date deliberately and review the lockfile diff (D-012). Slice 3's
+    OSV-Scanner will be the first scan of them.
 
 ## For Tom
 
-You adopted D-007's five recommendations (D-008). **Two things start the next step:**
-
-1. **Approve the revised phase 0 sketch,**
-   [`docs/sketches/phase-0-shared-core.md`](sketches/phase-0-shared-core.md), as revised in D-009.
-   *Recommended: yes.* Approving it starts slice 1 and nothing else. It can be undone: no code
-   exists yet. If you do not answer, nothing is built.
-2. **Protect `main` on GitHub** (ADR-0028). Only you can: Settings, then Rules, then Rulesets,
-   then a new branch ruleset for the default branch. Turn on "Require a pull request before
-   merging" with 0 required approvals, and "Require status checks to pass" with both CI jobs,
-   `lint, types, tests, records` and `gitleaks (tripwire 2)`. Also block force pushes and
-   deletions. Leave "Require review from Code Owners" off.
+You approved the phase 0 sketch (D-010), and slices 1 and 2 are built (D-011, D-012).
+Nothing blocks the next slice. When you are ready, ask for a pull request: merging it is what puts `CARD-0001`,
+your approval of the sketch, into effect.
 
 **These can wait.** Nothing is built on them until you answer.
 
-3. **The gate table** in `docs/charter/operating-model.md` was rebuilt from text; four places
-   are marked *inferred*. Correct? (D-003)
-4. **The six draft exit tests** in `docs/charter/build-plan.md`: confirm, or send the
+1. **The gate table** in `docs/charter/operating-model.md` was rebuilt from text; four places
+   are marked *inferred*. Correct? The gates now run on that reading, plus three more inferred
+   readings in D-012: G0 needs hypotheses covering D, V and F; G1 does not yet need the
+   profile's `unknown`s resolved; G3 trusts a hand-written build record until slice 4. (D-003)
+2. **The six draft exit tests** in `docs/charter/build-plan.md`: confirm, or send the
    originals. (D-003)
-5. **Secrets, before the session that needs them:** `NEON_DATABASE_URL`, `R2_BUCKET`,
+3. **Secrets, before the session that needs them:** `NEON_DATABASE_URL`, `R2_BUCKET`,
    `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`; later an Anthropic key and `BRAVE_API_KEY`. (D-004)
-6. **A Langfuse project for Kiln.** The session's keys point at `data-expert-agent`.
+4. **A Langfuse project for Kiln.** The session's keys point at `data-expert-agent`.
    *Recommended: a new one.* (D-005 F1)
-7. **Four design rulings from D-005:** real-world results come back as de-identified
+5. **Four design rulings from D-005:** real-world results come back as de-identified
     aggregates (R2); provenance, not screening, guards tripwire 1 (R4); files are the record
     and Postgres an index (F2); and the reading of the charter's rules on silence (R5).
     *Recommended: yes to each.*
-8. **A budget** for phase 0's cents of sandbox and embedding calls, and an allowance for
+6. **A budget** for phase 0's cents of sandbox and embedding calls, and an allowance for
     exploration. $1.62 of the second-opinion budget is unspent; it is kept for that purpose.
-9. **Evaluation policy:** the SOP chooses models on the test split (§20.5) but says "choose on
+7. **Evaluation policy:** the SOP chooses models on the test split (§20.5) but says "choose on
     dev, report on test" (§12). *Recommended: choose on dev, always.* (D-007)
-10. **The model heuristics** in `CLAUDE.md` are the SOP's table. Still yours?
-11. **How approvals are made unforgeable,** before any loop runs unattended (ADR-0028): a
+8. **The model heuristics** in `CLAUDE.md` are the SOP's table. Still yours?
+9. **How approvals are made unforgeable,** before any loop runs unattended (ADR-0028): a
     separate GitHub identity for agents, or approvals signed with a key that never enters a
     cloud session. *Recommended: decide when the sketch's verifier slice is built.*
+10. **How you merge.** Use "Create a merge commit", as you did for pull request #2, or
+    "Squash and merge". "Rebase and merge" can make `kiln approvals` report an approval as
+    lapsed when it is not: safe, but noise. The ruleset can allow only the first two. (D-011)
+11. **The three sample briefs** in `evals/sample-briefs/`: approve them as the chair's first
+    evaluation set, or ask for changes. Needed before phase 1's first run, not before.
 
 ## Conventions to keep
 

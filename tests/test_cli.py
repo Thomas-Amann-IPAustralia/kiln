@@ -5,6 +5,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from kiln.cli import app
+from tests.test_cards import PLAN, make_card, write_card
 from tests.test_records import make_repo
 
 runner = CliRunner()
@@ -34,3 +35,16 @@ def test_doctor_exits_2_on_a_bad_config_before_any_call(tmp_path: Path) -> None:
     result = runner.invoke(app, ["doctor", "--config", str(bad)])
     assert result.exit_code == 2
     assert "surprise" in result.output
+
+
+def test_records_render_reports_what_it_rewrote(tmp_path: Path) -> None:
+    """Why: the author needs to see which cards render changed before committing them."""
+    root = make_repo(tmp_path)
+    (root / PLAN).write_text("# Placeholder plan\n")
+    path = write_card(root, make_card(root))
+    path.write_text(path.read_text().replace("Not yet answered.", "Edited by hand."))
+    result = runner.invoke(app, ["records", "render", "--root", str(root)])
+    assert result.exit_code == 0
+    assert "rendered docs/cards/CARD-0001" in result.output
+    again = runner.invoke(app, ["records", "render", "--root", str(root)])
+    assert "already its rendering" in again.output

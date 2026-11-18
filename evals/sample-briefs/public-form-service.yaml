@@ -1,0 +1,57 @@
+# SYNTHETIC. Written by Claude as a sample brief for the chair's first evaluation set (first
+# move 9). It describes no real service, agency or person. A draft until Tom approves the set.
+version: 1
+solution: public-form-service
+title: Replacement certificate request form
+question: >-
+  Can a public online form let small businesses request a replacement registration
+  certificate without phoning or posting a paper form?
+brief: >-
+  Businesses that lose their registration certificate have to download a PDF, print it, sign
+  it and post it, or ring the contact centre. Most of the calls are people asking where their
+  request is up to. I want a simple online form that takes the request, checks it is complete,
+  and gives them a reference number they can track. Staff still check each request and send
+  the certificate. It has to work on a phone and for people using a screen reader. I'd like to
+  see a working version within $25 of build spend.
+users:
+  - name: Business applicants
+    description: >-
+      Owners or staff of small businesses holding a registration, on any device, some with
+      assistive technology.
+  - name: Processing staff
+    description: Agency staff who check each request before a certificate is reissued.
+hypotheses:
+  - id: H1
+    dimension: desirability
+    statement: Applicants would rather use the online form than the paper form or a phone call.
+    measure: >-
+      Share of replacement requests arriving online in the first four weeks of the real-world
+      test, against the paper and phone requests in the same period.
+  - id: H2
+    dimension: viability
+    statement: The form costs less per request than the paper process it replaces.
+    measure: unknown
+  - id: H3
+    dimension: feasibility
+    statement: >-
+      The form can hand each request to the existing case system without manual re-keying.
+    measure: >-
+      A test request sent through the form appears in a sandboxed copy of the case system's
+      interface with every field intact.
+proportionality:
+  who_uses:
+    value: [public, agency]
+    basis: authoritative
+  data_touched:
+    value: [personal, commercial]
+    basis: authoritative
+    note: Names and contact details of applicants, and their business registration details.
+  effect_on_people:
+    value: acts
+    basis: inferred
+    note: >-
+      The form opens a request that staff act on; staff, not the form, decide whether to
+      reissue. Confirm with Tom at G0.
+budget:
+  build_usd: 25
+  run_usd_per_month: unknown

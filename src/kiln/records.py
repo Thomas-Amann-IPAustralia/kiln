@@ -3,7 +3,8 @@
 The records are how one session hands work to the next (CLAUDE.md, "Records"). Each check here
 guards a way they have gone stale before: a skipped decision number, an ADR missing from its
 index, a handover that names the wrong next number, a seed document changed under its
-snapshot, a link to a file that moved.
+snapshot, a link to a file that moved, a decision card edited without re-rendering or
+resting on a file that has since changed.
 """
 
 from __future__ import annotations
@@ -13,6 +14,8 @@ import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+
+from kiln import cards
 
 DECISIONS = Path("docs/decisions.md")
 HANDOVER = Path("docs/handover.md")
@@ -217,11 +220,20 @@ def check_links(root: Path) -> list[Problem]:
     return problems
 
 
+def check_cards(root: Path) -> list[Problem]:
+    """Decision cards: names, numbering, renderings, and the files they rest on (ADR-0030)."""
+    return [
+        Problem(Path(error.item or cards.CARDS_DIR), error.cause)
+        for error in cards.check_cards(root)
+    ]
+
+
 def check_all(root: Path) -> list[Problem]:
     return [
         *check_decisions(root),
         *check_handover(root),
         *check_adrs(root),
         *check_seeds(root),
+        *check_cards(root),
         *check_links(root),
     ]
