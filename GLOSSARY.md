@@ -27,6 +27,9 @@ The human who sets the classification of information. Agents may only propose on
 
 ### The factory
 
+**Build session**:
+An agent session that builds Kiln itself, such as a Claude Code session. It is not a Council expert.
+
 **Kiln**:
 The whole factory: the Council, the coding swarm and the shared core, and this repository.
 _Avoid_: the Council repo, the system
@@ -161,6 +164,14 @@ The Researcher's handover of an external dataset: endpoint, exact query, schema,
 **Decision record**:
 A decision the Council makes while building a solution, numbered DEC-NNNN, with its actor, time, basis and any dissent.
 _Avoid_: ADR (that is a ruling about Kiln itself)
+
+**Decision card**:
+A decision put to Tom, numbered CARD-NNNN: the question, the options and their consequences, a recommendation, any dissent, whether it can be undone, what happens without an answer, and the exact files it rests on. Tom's answer is written into it in his words.
+_Avoid_: approval request, sign-off
+
+**Approval**:
+Tom's merge, into `main`, of a decision card that holds his answer. It puts the answer into effect for the exact versions the card names, and lapses if any of them changes. A merged card without an answer approves nothing.
+_Avoid_: sign-off, LGTM
 
 **Dissent**:
 An expert's recorded disagreement with a decision, written by that expert and shown to Tom unedited.

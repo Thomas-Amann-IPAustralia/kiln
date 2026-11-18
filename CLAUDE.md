@@ -83,6 +83,11 @@ block the next step first, and mark the rest as able to wait. For each, give a d
 - whether it can be undone, and what happens if Tom does not answer;
 - exactly what he is approving: the file and its commit, or the record and its hash.
 
+When Tom answers, write the card as a file in `docs/cards/`: fill in its front matter, put his
+answer in his own words, and run `uv run kiln records render`. His merge of that card is the
+approval (ADR-0028); `uv run kiln approvals` lists every card and flags one whose approval has
+lapsed. A change to anything an approved card rests on needs a new card that supersedes it.
+
 **The friction log.** When Tom needs something explained twice, asks what a term means,
 reverses a decision he misread, or answers a different question from the one asked, add one
 line to [`docs/friction-log.md`](docs/friction-log.md) in that turn.
@@ -124,7 +129,8 @@ measured and adopted (D-005, F2).
 | Handover | [`docs/handover.md`](docs/handover.md) | One note, kept current as a whole. Close the items an update settles in the same commit. |
 | Glossary | [`GLOSSARY.md`](GLOSSARY.md) | The one vocabulary. No implementation detail. |
 | Friction log | [`docs/friction-log.md`](docs/friction-log.md) | One line each time Tom and Kiln miss each other. |
-| Sketches | `docs/sketches/` | A design proposed for Tom's approval before a major component is built. |
+| Decision cards | `docs/cards/`, `CARD-NNNN` | Each decision put to Tom, with his answer once given. Never edited after approval: superseded by a new card. |
+| Sketches | `docs/sketches/` | A design proposed for Tom's approval before a major component is built. Frozen once approved. |
 | Reviews | `docs/reviews/` | Second opinions: the spec, the answer and the cached response with its cost. |
 | Seeds | `docs/repo-seeds/` | Sealed inputs, with a hash manifest. |
 

@@ -1,0 +1,53 @@
+# SYNTHETIC. Written by Claude as a sample brief for the chair's first evaluation set (first
+# move 9). It describes no real service, agency or person. A draft until Tom approves the set.
+version: 1
+solution: internal-rag-assistant
+title: Procedures manual assistant
+question: >-
+  Can staff get correct, cited answers from the internal procedures manual faster than by
+  searching it themselves?
+brief: >-
+  Our procedures manual is about 600 pages across a few hundred web pages on the intranet, and
+  new staff struggle to find the right section. I want an assistant they can ask in plain
+  English that answers from the manual only, quotes the section it relied on, and says when
+  the manual doesn't cover something. It is for our own staff, not the public. It must not
+  invent procedures. Build budget about $40, and it shouldn't cost more than $30 a month to run
+  for the trial.
+users:
+  - name: Case officers
+    description: Agency staff applying procedures day to day, including new starters.
+  - name: Team leaders
+    description: Staff who answer procedure questions from their teams today.
+hypotheses:
+  - id: H1
+    dimension: desirability
+    statement: Case officers would ask the assistant before asking a team leader.
+    measure: >-
+      Questions asked per active user per week during the real-world test, and the team
+      leaders' own count of procedure questions before and during it.
+  - id: H2
+    dimension: feasibility
+    statement: >-
+      The assistant answers from the manual with the right section cited, and declines when the
+      manual is silent.
+    measure: >-
+      On a held-out set of 50 questions with known answers, at least 90% cite the correct
+      section, and every question the manual does not cover is declined.
+  - id: H3
+    dimension: viability
+    statement: Running the assistant costs less than the staff time it saves.
+    measure: unknown
+proportionality:
+  who_uses:
+    value: [agency]
+    basis: authoritative
+  data_touched:
+    value: [internal]
+    basis: authoritative
+    note: The procedures manual is unpublished, but holds no personal information.
+  effect_on_people:
+    value: informs
+    basis: authoritative
+budget:
+  build_usd: 40
+  run_usd_per_month: 30

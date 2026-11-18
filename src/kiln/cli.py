@@ -10,6 +10,8 @@ from typing import Annotated
 import httpx
 import typer
 
+from kiln import approvals as approvals_module
+from kiln import cards as cards_module
 from kiln import doctor as doctor_module
 from kiln import records as records_module
 from kiln import review as review_module
@@ -101,6 +103,43 @@ def review(
         raise _fail(
             f"the review did not complete ({record.incomplete_reason or record.status}); "
             "its cost is recorded | see: " + str(page)
+        )
+
+
+@records_app.command("render")
+def records_render(
+    root: Annotated[Path, typer.Option(help="Repo root.")] = Path(),
+) -> None:
+    """Rewrite each decision card as its canonical rendering, after editing its front matter."""
+    try:
+        changed = cards_module.render_cards(root)
+    except KilnError as exc:
+        raise _fail(exc.one_line()) from exc
+    for path in changed:
+        typer.echo(f"rendered {path}")
+    if not changed:
+        typer.echo("Every card is already its rendering.")
+
+
+@app.command()
+def approvals(
+    ref: Annotated[
+        str, typer.Option(help="The branch Tom merges into. Fetch it first.")
+    ] = approvals_module.DEFAULT_REF,
+    root: Annotated[Path, typer.Option(help="Repo root.")] = Path(),
+) -> None:
+    """List each decision card: open, awaiting Tom's merge, approved, lapsed or superseded.
+    Exits 2 if an approval has lapsed, or a change here would lapse one. Free."""
+    try:
+        results = approvals_module.read_approvals(root, ref)
+    except KilnError as exc:
+        raise _fail(exc.one_line()) from exc
+    typer.echo(approvals_module.render(results, ref))
+    flagged = [result.card_id or result.path for result in results if result.needs_action]
+    if flagged:
+        raise _fail(
+            f"{len(flagged)} card(s) need a new card or a fix: {', '.join(flagged)} | "
+            "see: docs/adr/0028-only-tom-approves-or-merges.md"
         )
 
 

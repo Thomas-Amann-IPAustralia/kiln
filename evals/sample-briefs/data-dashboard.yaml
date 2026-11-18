@@ -1,0 +1,45 @@
+# SYNTHETIC. Written by Claude as a sample brief for the chair's first evaluation set (first
+# move 9). It describes no real service, agency or person. A draft until Tom approves the set.
+version: 1
+solution: data-dashboard
+title: Processing times dashboard
+question: >-
+  Would a weekly dashboard of processing times help the team spot backlogs before they reach
+  the service standard?
+brief: >-
+  Every month someone in the team spends two days pulling a spreadsheet out of the case system
+  to work out how long applications are taking, and by the time we see it the backlog has
+  already built up. I want a dashboard the team can look at each week showing time to
+  decision by application type, and which ones are getting close to our service standard. It's
+  just for the team. Not sure yet what's in the extract or what it would cost.
+users:
+  - name: Team members
+    description: Tom's team, who allocate work and watch the backlog.
+hypotheses:
+  - id: H1
+    dimension: desirability
+    statement: The team would check the dashboard weekly and act on what it shows.
+    measure: unknown
+  - id: H2
+    dimension: feasibility
+    statement: >-
+      Time to decision can be computed from the case system's extract without manual cleaning.
+    measure: >-
+      The dashboard's figures for a past month match the figures in that month's hand-built
+      spreadsheet.
+proportionality:
+  who_uses:
+    value: [toms_team]
+    basis: authoritative
+  data_touched:
+    value: unknown
+    basis: unknown
+    note: >-
+      Depends on whether the case system's extract includes applicant names. Ask the data
+      owner before G1.
+  effect_on_people:
+    value: informs
+    basis: authoritative
+budget:
+  build_usd: unknown
+  run_usd_per_month: unknown

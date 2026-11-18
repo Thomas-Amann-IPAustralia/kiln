@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from kiln import records
+from tests.test_cards import PLAN, make_card, write_card
 
 
 def make_repo(root: Path) -> Path:
@@ -145,3 +146,13 @@ def test_links_in_code_and_to_the_web_are_left_alone(repo: Path) -> None:
         + "\n```md\n[template](reports/<file>.md)\n```\n"
     )
     assert messages(repo) == []
+
+
+def test_a_card_resting_on_a_changed_file_fails_the_records_check(repo: Path) -> None:
+    """Why: the records check runs before every commit, so a quiet edit to what Tom approved
+    is stopped there, not discovered after the merge."""
+    (repo / PLAN).write_text("# Placeholder plan\n")
+    write_card(repo, make_card(repo))
+    assert messages(repo) == []
+    (repo / PLAN).write_text("# Placeholder plan, edited\n")
+    assert any("needs a new card" in m for m in messages(repo))
