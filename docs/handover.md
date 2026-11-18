@@ -4,8 +4,9 @@ For the next Claude Code session. Read [`CLAUDE.md`](../CLAUDE.md) first. Build 
 asks for next; nothing that spends money is approved beyond the $2 second-opinion budget.
 
 **Status (2026-11-18):** phase 0. Tom approved the phase 0 sketch (D-010). Slices 1 and 2 of
-9 are built (D-011, D-012) on branch `ccr-d620ebdd-x20kar`, not yet merged; no pull request is
-open. D-001
+9 are built (D-011, D-012) and merged to `main` by Tom in pull request #3 (`5dd97e5`). CI
+passed both jobs on it. `kiln approvals` reads `CARD-0001`, Tom's approval of the sketch, as
+approved at that merge: the first approval read from real history. D-001
 to D-009 are merged to `main` (pull request #2). `main` is protected by a ruleset
 Tom added (ADR-0028); GitHub reports the branch as protected, but this session cannot read the
 ruleset's settings, so which checks it requires is unverified.
@@ -29,7 +30,7 @@ ruleset's settings, so which checks it requires is unverified.
   (`kiln.decision_records`), decision cards (`kiln.cards`) and approvals read from history
   (`kiln.approvals`). Three synthetic sample briefs in `evals/sample-briefs/`, drafts until
   Tom approves the set. The first card, [`docs/cards/`](cards/), records Tom's approval of
-  the sketch; it takes effect when he merges it.
+  the sketch; approved by Tom's merge of pull request #3.
 - **Slice 2 (D-012):** the gates, G0 to G5 (`kiln.gates`, `kiln gates`), on LangGraph 1.2.19,
   with the artefacts each gate reads (`kiln.artefacts`). Passes are recomputed, never stored.
   Tom's gates pass on a decision card with a `gate` field, approved at the files' current
@@ -82,7 +83,7 @@ ruleset's settings, so which checks it requires is unverified.
    when a real solution starts to depend on them.
 10. **CI does not run on pushes to this session's branch.** The workflow runs on pushes to
     `main` and `claude/**`, and on pull requests; this branch is `ccr-*`. CI runs once a pull
-    request is open. Every check it runs passed here.
+    request is open: it ran on pull request #3, and both jobs passed.
 11. **The data kinds in the profile** are the Governance proposal's list plus `public` and
     `internal`. The Governance Guru refines them in phase 2; the grilling may rename them.
 12. **LangGraph's packages are held to uploads before 2026-11-04** in `pyproject.toml`. To
@@ -91,9 +92,8 @@ ruleset's settings, so which checks it requires is unverified.
 
 ## For Tom
 
-You approved the phase 0 sketch (D-010), and slices 1 and 2 are built (D-011, D-012).
-Nothing blocks the next slice. When you are ready, ask for a pull request: merging it is what puts `CARD-0001`,
-your approval of the sketch, into effect.
+Slices 1 and 2 are built and merged (D-011, D-012); your merge approved `CARD-0001`. Nothing
+blocks the next slice, slice 3.
 
 **These can wait.** Nothing is built on them until you answer.
 
