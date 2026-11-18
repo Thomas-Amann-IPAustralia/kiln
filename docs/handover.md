@@ -3,13 +3,14 @@
 For the next Claude Code session. Read [`CLAUDE.md`](../CLAUDE.md) first. Build only what Tom
 asks for next; nothing that spends money is approved beyond the $2 second-opinion budget.
 
-**Status (2026-11-18):** phase 0. Tom approved the phase 0 sketch (D-010). Slice 1 of 9 is
-built (D-011) on branch `ccr-d620ebdd-x20kar`, not yet merged; no pull request is open. D-001
+**Status (2026-11-18):** phase 0. Tom approved the phase 0 sketch (D-010). Slices 1 and 2 of
+9 are built (D-011, D-012) on branch `ccr-d620ebdd-x20kar`, not yet merged; no pull request is
+open. D-001
 to D-009 are merged to `main` (pull request #2). `main` is protected by a ruleset
 Tom added (ADR-0028); GitHub reports the branch as protected, but this session cannot read the
 ruleset's settings, so which checks it requires is unverified.
 
-**Next free decision number: D-012**
+**Next free decision number: D-013**
 
 ## Where things stand
 
@@ -29,13 +30,17 @@ ruleset's settings, so which checks it requires is unverified.
   (`kiln.approvals`). Three synthetic sample briefs in `evals/sample-briefs/`, drafts until
   Tom approves the set. The first card, [`docs/cards/`](cards/), records Tom's approval of
   the sketch; it takes effect when he merges it.
+- **Slice 2 (D-012):** the gates, G0 to G5 (`kiln.gates`, `kiln gates`), on LangGraph 1.2.19,
+  with the artefacts each gate reads (`kiln.artefacts`). Passes are recomputed, never stored.
+  Tom's gates pass on a decision card with a `gate` field, approved at the files' current
+  hashes. LangSmith tracing is switched off in code.
 - **Second opinion:** two OpenAI reviews of the docs, in `docs/reviews/2026-11-17-docs/`, for
   $0.38 of a $2 budget (D-007).
   CI's first run passed both jobs on commit `8f4b596`, which is the first time the gitleaks
   job ran anywhere (D-001 could not run it in the session).
-- **Not built:** slices 2 to 9 of the approved order,
-  [`docs/sketches/phase-0-shared-core.md`](sketches/phase-0-shared-core.md). Next is slice 2
-  (gates) or slice 3 (scanners and the spend ledger); 3, 4 and 9 need no money or secrets.
+- **Not built:** slices 3 to 9 of the approved order,
+  [`docs/sketches/phase-0-shared-core.md`](sketches/phase-0-shared-core.md). Next is slice 3
+  (scanners and the spend ledger); 3, 4 and 9 need no money or secrets.
 - **Reusable pieces:**
   - `kiln.errors.KilnError`: the one-line, exit-code-2 failure every command uses.
   - `kiln.config`: strict Pydantic config; copy its pattern for new config sections.
@@ -43,7 +48,9 @@ ruleset's settings, so which checks it requires is unverified.
   - `kiln.records.check_all`: add a check here when a new kind of record appears.
   - `kiln.recordfile`: one file per record, front matter then rendering. Use it for tickets,
     findings and obligations rather than a new format.
-  - `kiln.approvals.read_approvals`: G2's question "is this plan approved, at this hash?"
+  - `kiln.approvals.read_approvals`: every card's approval, read from history.
+  - `kiln.gates.validate(gate, workspace)`: one gate, from the files as they are now. The
+    thin path in slice 6 calls this, not a stored pass.
   - `kiln.model.Record`, `Text`, `Unknown`: the base and field types every record uses.
   - `tests/conftest.py`: the fixture that refuses sockets.
   - `kiln review`: a spec in, a cached and costed answer out. Use it for the cross-provider
@@ -67,27 +74,33 @@ ruleset's settings, so which checks it requires is unverified.
    the first request's exactly. Under OpenAI's default caching both paid the write premium for
    nothing (about $0.056). Before the next multi-request review, smoke-test documents and
    question as separate input items (D-007).
-8. **G0's readiness checks belong to slice 2:** that a profile's hypotheses cover
-   desirability, viability and feasibility, and which `unknown`s may pass G0 (D-011).
+8. **G3 trusts `build.yaml` until slice 4.** Its ticket results are written by hand until the
+   verifier becomes their only writer (ADR-0027). No real solution uses the gates before then.
 9. **`kiln approvals` is not in CI.** CI's checkout is shallow and has no `origin/main`. Adding
    it means `fetch-depth: 0` in `.github/workflows/ci.yml`, a control-plane change for a pull
-   request Tom reviews. Worth doing with slice 2, when G2 starts to depend on approvals.
+   request Tom reviews. `kiln gates` reads history the same way. Worth doing before slice 6,
+   when a real solution starts to depend on them.
 10. **CI does not run on pushes to this session's branch.** The workflow runs on pushes to
     `main` and `claude/**`, and on pull requests; this branch is `ccr-*`. CI runs once a pull
     request is open. Every check it runs passed here.
 11. **The data kinds in the profile** are the Governance proposal's list plus `public` and
     `internal`. The Governance Guru refines them in phase 2; the grilling may rename them.
+12. **LangGraph's packages are held to uploads before 2026-11-04** in `pyproject.toml`. To
+    upgrade one, move its date deliberately and review the lockfile diff (D-012). Slice 3's
+    OSV-Scanner will be the first scan of them.
 
 ## For Tom
 
-You approved the phase 0 sketch (D-010), and slice 1 is built (D-011). Nothing blocks the
-next slice. When you are ready, ask for a pull request: merging it is what puts `CARD-0001`,
+You approved the phase 0 sketch (D-010), and slices 1 and 2 are built (D-011, D-012).
+Nothing blocks the next slice. When you are ready, ask for a pull request: merging it is what puts `CARD-0001`,
 your approval of the sketch, into effect.
 
 **These can wait.** Nothing is built on them until you answer.
 
 1. **The gate table** in `docs/charter/operating-model.md` was rebuilt from text; four places
-   are marked *inferred*. Correct? (D-003)
+   are marked *inferred*. Correct? The gates now run on that reading, plus three more inferred
+   readings in D-012: G0 needs hypotheses covering D, V and F; G1 does not yet need the
+   profile's `unknown`s resolved; G3 trusts a hand-written build record until slice 4. (D-003)
 2. **The six draft exit tests** in `docs/charter/build-plan.md`: confirm, or send the
    originals. (D-003)
 3. **Secrets, before the session that needs them:** `NEON_DATABASE_URL`, `R2_BUCKET`,

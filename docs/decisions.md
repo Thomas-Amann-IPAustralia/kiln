@@ -589,3 +589,72 @@ false approval. It is not in CI yet: CI's checkout is shallow and has no `origin
 **Consequences.** Slice 2 (gates) and slice 4 (tickets and the verifier) can build on these
 records. For Tom: nothing new blocks. Two small items join the handover's list that can wait:
 the merge method, and the sample briefs.
+
+## D-012 — Slice 2 built: the gates, G0 to G5, on LangGraph (2026-11-18)
+
+**Context.** Tom asked for the next slice. Slice 2 of the approved sketch (D-010) builds "G0 to
+G5 as a LangGraph state machine whose nodes only validate artefacts", checked by four things:
+a sample brief walks G0 to G5 on fixture artefacts; a missing artefact fails its gate; a pass
+written from outside the validation node is refused; a plan edited after approval fails G2.
+
+**Decision (Claude; engineering inside the approved slice).**
+
+1. **LangGraph, as the approved sketch and the charter name it, pinned and held back.**
+   LangGraph 1.2.19 (30 October). It adds 26 packages to the lockfile, among them
+   `langchain-core`, `langsmith`, `requests` and `websockets`; no existing package changed
+   version. Each new package is held to releases uploaded before 4 November, two weeks before
+   today, in `pyproject.toml`'s `[tool.uv.exclude-newer-package]`, so a release in the window
+   in which bad ones are usually caught cannot slip in through a later `uv lock`. A first try
+   applied the cutoff to every package; it downgraded three existing ones and wrote a
+   repo-wide rule into the lockfile, which would bind every agent, so it was reverted.
+   *What LangGraph buys today is small:* six nodes in a line, a checkpointer, and
+   `update_state`. The gate logic is plain functions under it (`kiln.gates.validate`), so the
+   machine is a thin shell, cheap to replace if phase 1's agent nodes do not need it.
+2. **Tracing through LangGraph is switched off in code** (observed). With
+   `LANGSMITH_TRACING=true` in the environment, a plain LangGraph run posted its state to
+   `api.smith.langchain.com` (this session's proxy refused it with a 403). Gate state names a
+   solution's files, so every run is wrapped in `tracing_context(enabled=False)`, and a test
+   sets both tracing variables and checks that no gate runs with tracing on. Kiln's tracer is
+   Langfuse, in slice 7.
+3. **A pass is never trusted, only recomputed.** Every gate is evaluated from the files and
+   `origin/main`'s history as they are now; nothing about a pass is stored to be believed.
+   Before a node validates its gate, it re-validates every pass already in the run's state and
+   refuses one that does not hold. A pass injected through `update_state`, posing as the G1
+   node, is refused at G2.
+4. **Tom's gates need a gate card.** A decision card gains an optional `gate` field: which of
+   Tom's gates it decides, and which option passes it. A Tom gate passes when an approved card
+   answered with that option rests on the gate's files *at their current hashes*. Two rules
+   follow, each tested:
+   - *Tom's latest approval of a file counts for every earlier gate that needs it.* The G2
+     card rests on the profile as it stands at G2, so G0 does not need a fresh card each time
+     the profile gains a measure.
+   - *A lapsed approval still covers the files that did not change,* unless the card itself
+     was edited, when it covers nothing. Without this, a plan edit lapsed the G2 card and the
+     run blamed G0, the wrong gate.
+5. **Four states, one exit rule.** A gate is `passed`, `awaiting Tom`, `incomplete` (an
+   artefact does not exist yet) or `failed`. `kiln gates` exits 2 only on `failed`: waiting for
+   work or for Tom is normal.
+6. **Each gate's artefact holds only what its checks read** (`kiln.artefacts`): an
+   applicability register, a plan with its review and estimate, a build record, a pre-release
+   record, and the real-world test's findings. Their owners extend them when built.
+
+**Readings of the charter (inferred), for Tom with the gate table (handover, "These can
+wait", 1).** G0 requires hypotheses covering desirability, viability and feasibility. G1
+requires only a valid register: it does not yet require the profile's `unknown`s to be
+resolved, which is the Governance Guru's call in phase 2. G3 trusts `build.yaml`, which is
+written by hand until slice 4 makes the verifier its only writer.
+
+**Also changed.** The data dashboard sample brief gained a viability hypothesis, since G0 now
+needs one. `CARD-0001` was re-rendered with the new `gate: null` field; it is not merged, so no
+approval is affected.
+
+**Checked.** `make check` passes: 157 tests, none touching the network. The walk runs a sample
+brief through five real merges and four of Tom's cards. Each of six deliberate breaks (no
+re-confirmation, no tracing guard, coverage ignoring hashes, only same-gate cards counting,
+an edited card still counting, Tom's gates needing no card) made at least one test fail.
+**Not checked:** a real solution, which slice 6 brings; LangGraph on CI's runner.
+
+**Spend:** $0.
+
+**Consequences.** Slice 3 (scanners and the spend ledger) is next. Slice 4 makes the verifier
+the only writer of G3's ticket results.
