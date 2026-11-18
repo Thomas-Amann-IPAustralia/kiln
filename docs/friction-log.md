@@ -15,3 +15,4 @@ holds the detail.
 | --- | --- | --- | --- |
 | 2026-11-10 | Kickoff ended with 13 questions for Tom, several of them technical (files as the record, the ticket verifier). | Splitting the list into five that start the next step and eight that can wait (D-007) | Both document reviews (D-006, D-007) |
 | 2026-11-17 | Tom asked whether the documentation "would be considered good practice by AI experts": he could not judge it himself, and Claude had written it. | A second opinion from another provider's model, then a comparison of the two reviews | Tom (D-006, D-007) |
+| 2026-11-18 | Tom asked Claude to open a pull request and merge it once the tests passed; ADR-0028, adopted in D-008, says no agent merges, and the pull request held his own approval (`CARD-0001`), which an agent's merge would have forged. | Claude opened the pull request, took it to green and left the merge to Tom, saying why | Tom |
