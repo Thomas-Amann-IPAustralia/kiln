@@ -47,6 +47,10 @@ read its settings, so which checks it requires is unverified.
     Every paid call reserves its bound and settles at its cost; a call that could pass a cap is
     refused, and one that may reach 80% warns. `kiln review` uses it. It holds the three
     reviews of D-007: $0.3792 of the $2 budget.
+  - *On GitHub* (observed): run 14, on commit `0588dc6`, passed all three jobs. The
+    `scanners` job took 5 minutes 40 seconds, 4 minutes 41 of them building the Go tools; every
+    repo scan passed and every seeded finding was detected. Run 13 had failed on the `mcp`
+    advisory, which D-013's correction explains.
 - **Second opinion:** two OpenAI reviews of the docs, in `docs/reviews/2026-11-17-docs/`, for
   $0.38 of a $2 budget (D-007).
 - **Not built:** slices 4 to 9 of the approved order,
