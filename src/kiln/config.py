@@ -13,6 +13,8 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from kiln.errors import KilnError
+from kiln.model import RepoPath
+from kiln.vocabulary import Severity
 
 DEFAULT_CONFIG_PATH = Path("config/kiln.yaml")
 
@@ -133,12 +135,87 @@ class Budget(_Strict):
     approved: str
 
 
+class SpendConfig(_Strict):
+    """Where the spend ledger lives, and when it warns (sketch, "Spend"; D-013)."""
+
+    ledger: RepoPath = "docs/spend/ledger.jsonl"
+    warn_at: Annotated[float, Field(gt=0, le=1)] = 0.8
+    """The share of a budget at which a paid command warns before it spends."""
+
+
+class SeededFinding(_Strict):
+    """A finding planted in a fixture, so CI can show that a scanner still detects (D-013)."""
+
+    target: RepoPath
+    rule: Annotated[str, Field(min_length=1)]
+    parse_as: Annotated[str, Field(pattern=r"^[a-z0-9._-]+$")] | None = None
+    """OSV-Scanner only: the lockfile format to read the target as, such as
+    `requirements.txt`. The fixture's own name is not one OSV-Scanner or a bot recognises."""
+
+
+class SemgrepRules(_Strict):
+    """Semgrep's rules, from one commit of their repository: a registry ruleset can change
+    under the same name, a commit cannot."""
+
+    repository: Annotated[str, Field(pattern=r"^https://github\.com/[\w.-]+/[\w.-]+$")]
+    commit: Annotated[str, Field(pattern=r"^[0-9a-f]{40}$")]
+    packs: tuple[RepoPath, ...] = Field(min_length=1)
+    """Folders of the rules repository to run, such as `python`."""
+
+
+class SemgrepConfig(_Strict):
+    version: Annotated[str, Field(pattern=r"^\d+\.\d+\.\d+$")]
+    rules: SemgrepRules
+    exclude: tuple[RepoPath, ...] = ()
+    seeded: SeededFinding
+
+
+GoModule = Annotated[str, Field(pattern=r"^[a-z0-9.-]+(?:/[\w.-]+)+$")]
+
+
+class GoScannerConfig(_Strict):
+    """A scanner built from its Go module, whose source the Go checksum database pins."""
+
+    module: GoModule
+    package: GoModule
+    """The command's package, inside `module`."""
+    version: Annotated[str, Field(pattern=r"^v\d+\.\d+\.\d+$")]
+    seeded: SeededFinding
+
+    @model_validator(mode="after")
+    def _package_in_module(self) -> GoScannerConfig:
+        if self.package != self.module and not self.package.startswith(self.module + "/"):
+            raise ValueError(f"package {self.package!r} is not inside module {self.module!r}")
+        return self
+
+
+class TrivyConfig(GoScannerConfig):
+    scanners: tuple[Literal["misconfig", "vuln"], ...] = Field(min_length=1)
+    exclude: tuple[RepoPath, ...] = ()
+
+
+class ScannersConfig(_Strict):
+    """The scanner baseline: Semgrep CE, OSV-Scanner and Trivy, pinned (D-013)."""
+
+    blocking: tuple[Severity, ...] = Field(min_length=1)
+    """A finding at one of these severities fails the scan unless it is dismissed."""
+    dismissals: RepoPath
+    environment: tuple[Annotated[str, Field(pattern=r"^[A-Za-z_][A-Za-z0-9_]*$")], ...]
+    """The only environment variables a scanner is given. A scanner is outside code."""
+    timeout_seconds: Annotated[float, Field(gt=0, le=3600)] = 900.0
+    semgrep: SemgrepConfig
+    osv_scanner: GoScannerConfig
+    trivy: TrivyConfig
+
+
 class KilnConfig(_Strict):
     current_phase: Annotated[int, Field(ge=0, le=5)]
     probe_timeout_seconds: Annotated[float, Field(gt=0, le=60)] = 20.0
     services: dict[Name, Service]
     models: dict[Name, Model] = Field(default_factory=dict)
     budgets: dict[Name, Budget] = Field(default_factory=dict)
+    spend: SpendConfig = SpendConfig()
+    scanners: ScannersConfig | None = None
 
     @model_validator(mode="after")
     def _models_name_http_services(self) -> KilnConfig:

@@ -5,6 +5,7 @@
 
 /.github/                   @Thomas-Amann-IPAustralia
 /.pre-commit-config.yaml    @Thomas-Amann-IPAustralia
+/.semgrepignore             @Thomas-Amann-IPAustralia
 /CLAUDE.md                  @Thomas-Amann-IPAustralia
 /AGENTS.md                  @Thomas-Amann-IPAustralia
 /config/                    @Thomas-Amann-IPAustralia

@@ -5,12 +5,14 @@ the documents (each pinned to a git revision), the model and the budget. One spe
 request. The command follows the SOP's money rules (§14.1):
 
 - `--dry-run` builds the exact request and prints an upper-bound estimate. It sends nothing.
-- `--confirm` is required to send. The budget guard runs first: the spend already recorded
-  against the spec's budget, plus this request's upper bound, must fit the cap in config.
+- `--confirm` is required to send. The request's upper bound is reserved in the spend ledger
+  first (`kiln.spend`), which refuses it if the budget's committed spend and the bound could
+  pass the cap in config, and warns at 80%. The reservation is settled at the real cost.
 - Every response is cached under the hash of the request that produced it, and the cache is
   committed. Re-running a spec whose request has not changed spends nothing.
 - The cost is computed from the provider's reported usage and the prices in config, and
-  recorded with the response, failed and truncated responses included.
+  recorded with the response and in the ledger, failed and truncated responses included. A
+  response that reports no usage is charged at its bound: unknown is never counted as free.
 
 Documents are untrusted data to the reviewer: each sits in its own block, defanged so that
 its text cannot close the block or open a new one, and the instructions say so.
@@ -32,9 +34,11 @@ import httpx
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from kiln import spend
 from kiln.config import BasicAuth, BearerAuth, KilnConfig, Model, Prices
 from kiln.doctor import PLACEHOLDER_KEY
 from kiln.errors import KilnError
+from kiln.vocabulary import Actor, Basis
 
 CACHE_DIR = Path("docs/reviews/cache")
 RESPONSES_PATH = "/v1/responses"
@@ -283,17 +287,23 @@ def cache_path(root: Path, digest: str) -> Path:
     return root / CACHE_DIR / f"{digest}.json"
 
 
-def recorded_spend(root: Path, budget: str) -> float:
-    """Every dollar recorded against `budget`, failed and truncated requests included."""
-    total = 0.0
+def cached_records(root: Path) -> list[tuple[str, ReviewRecord]]:
+    """Every cached response, with its repo path, in path order."""
     directory = root / CACHE_DIR
     if not directory.is_dir():
-        return 0.0
-    for path in sorted(directory.glob("*.json")):
-        record = ReviewRecord.model_validate_json(path.read_text(encoding="utf-8"))
-        if record.budget == budget:
-            total += record.usd
-    return round(total, 6)
+        return []
+    return [
+        (
+            (CACHE_DIR / path.name).as_posix(),
+            ReviewRecord.model_validate_json(path.read_text(encoding="utf-8")),
+        )
+        for path in sorted(directory.glob("*.json"))
+    ]
+
+
+# Errors raised before a request reached the provider, so nothing can have been billed. Any
+# other transport error may come after the provider received the request.
+_NOT_SENT = (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout, httpx.ProxyError)
 
 
 def _write_atomic(path: Path, text: str) -> None:
@@ -326,6 +336,9 @@ class Plan(_Strict):
     budget: str
     budget_usd: float
     spent_usd: float
+    """Committed against the budget: settled costs, plus open reservations at their bounds."""
+    warning: str | None
+    """Set when this request may take the budget to the ledger's warning share of its cap."""
     cached: bool
 
 
@@ -348,6 +361,10 @@ def plan(spec_path: Path, config: KilnConfig, root: Path) -> Plan:
             f"{model.prices_valid_up_to_input_tokens:,} the configured prices hold to",
             item=str(spec_path),
         )
+    cached = cache_path(root, digest).is_file()
+    position = spend.read_ledger(root / config.spend.ledger).position(
+        spec.budget, config.budgets[spec.budget].usd
+    )
     return Plan(
         spec_path=str(spec_path),
         model=spec.model,
@@ -355,10 +372,21 @@ def plan(spec_path: Path, config: KilnConfig, root: Path) -> Plan:
         request=request,
         estimate=the_estimate,
         budget=spec.budget,
-        budget_usd=config.budgets[spec.budget].usd,
-        spent_usd=recorded_spend(root, spec.budget),
-        cached=cache_path(root, digest).is_file(),
+        budget_usd=position.cap,
+        spent_usd=position.committed,
+        warning=None
+        if cached
+        else _warning_or_none(position, the_estimate.usd_bound, config.spend.warn_at),
+        cached=cached,
     )
+
+
+def _warning_or_none(position: spend.Position, usd: float, warn_at: float) -> str | None:
+    """The ledger's warning for a dry run. Its refusal waits for `run`, which says why."""
+    try:
+        return spend.check(position, usd, warn_at)
+    except KilnError as exc:
+        return exc.cause
 
 
 def run(
@@ -368,19 +396,34 @@ def run(
     client: httpx.Client,
     env: Mapping[str, str] | None = None,
 ) -> ReviewRecord:
-    """Send the request, unless its response is cached. The budget guard runs first."""
+    """Send the request, unless its response is cached. Its upper bound is reserved in the
+    spend ledger first, and settled at the real cost after."""
     path = cache_path(root, the_plan.request_sha256)
     if path.is_file():
         return ReviewRecord.model_validate_json(path.read_text(encoding="utf-8"))
-    headroom = the_plan.budget_usd - the_plan.spent_usd
-    if the_plan.estimate.usd_bound > headroom:
-        raise KilnError(
-            f"over budget: the request may cost up to ${the_plan.estimate.usd_bound:.4f}, "
-            f"and ${headroom:.4f} of the ${the_plan.budget_usd:.2f} "
-            f"{the_plan.budget!r} budget is left",
-            item=the_plan.spec_path,
-            see="config/kiln.yaml, budgets",
+    bound = the_plan.estimate.usd_bound
+    held = spend.reserve(
+        root,
+        config,
+        budget=the_plan.budget,
+        usd=bound,
+        command="kiln review",
+        ref=f"sha256:{the_plan.request_sha256}",
+        by=Actor.BUILD_SESSION,
+    ).reservation
+
+    def settle(usd: float, outcome: str, basis: Basis, record: str | None = None) -> None:
+        spend.settle(
+            root,
+            config,
+            held.entry,
+            usd=usd,
+            outcome=outcome,
+            basis=basis,
+            by=Actor.BUILD_SESSION,
+            record=record,
         )
+
     model = config.models[the_plan.model]
     probe = config.services[model.service].probe
     assert probe is not None
@@ -395,9 +438,17 @@ def run(
             content=json.dumps(the_plan.request, ensure_ascii=False).encode("utf-8"),
             timeout=model.request_timeout_seconds,
         )
+    except _NOT_SENT as exc:
+        settle(0.0, f"not sent: {type(exc).__name__}", Basis.OBSERVED)
+        raise KilnError(
+            f"{type(exc).__name__} before the review reached the provider; nothing was spent",
+            item=the_plan.spec_path,
+        ) from exc
     except httpx.HTTPError as exc:
         raise KilnError(
-            f"{type(exc).__name__} sending the review; nothing was recorded as spent",
+            f"{type(exc).__name__} after the review may have reached the provider, so it may "
+            f"have been billed; ledger reservation {held.entry} holds its bound of ${bound:.4f} "
+            "until it is settled from the provider's usage page with `kiln spend settle`",
             item=the_plan.spec_path,
         ) from exc
     try:
@@ -417,19 +468,31 @@ def run(
         status=str(body.get("status", "http_error")),
         incomplete_reason=str(incomplete["reason"]) if "reason" in incomplete else None,
         usage=usage,
-        usd=cost(usage, model.usd_per_million_tokens) if usage else 0.0,
+        usd=cost(usage, model.usd_per_million_tokens) if usage else bound,
         estimate=the_plan.estimate,
         answer=_answer(body),
         response=body or None,
     )
     if not response.is_success:
-        # An error that was not billed is not cached, so a fixed spec can be sent again.
+        # Taken as unbilled, as the provider does not charge for a refused request; not
+        # cached, so a fixed spec can be sent again.
+        settle(0.0, f"HTTP {response.status_code}, not billed", Basis.ASSUMED)
         message = str(_obj(body.get("error")).get("message", "no error message"))
         raise KilnError(
             f"the provider answered HTTP {response.status_code}: {message[:200]}",
             item=the_plan.spec_path,
         )
     _write_atomic(path, record.model_dump_json(indent=2) + "\n")
+    relative = (CACHE_DIR / path.name).as_posix()
+    if usage is None:
+        settle(
+            bound,
+            f"{record.status}; no usage reported, so charged at the bound",
+            Basis.ASSUMED,
+            relative,
+        )
+    else:
+        settle(record.usd, record.status, Basis.OBSERVED, relative)
     return record
 
 

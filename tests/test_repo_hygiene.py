@@ -5,10 +5,13 @@ from __future__ import annotations
 import re
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import pytest
+import yaml
 
 from kiln.config import load_config
+from kiln.findings import Scanner
 
 # High-confidence shapes only. Gitleaks is the real control (it runs in CI and pre-commit);
 # this is the net that needs no extra binary. A clean run means "nothing detected by these
@@ -101,4 +104,46 @@ def test_workflows_default_to_read_only_tokens(repo_root: Path) -> None:
         )
         assert "pull_request_target" not in text, (
             f"{workflow.name} runs privileged on untrusted pull requests"
+        )
+
+
+def ci_workflow(repo_root: Path) -> dict[str, Any]:
+    return yaml.safe_load((repo_root / ".github/workflows/ci.yml").read_text(encoding="utf-8"))
+
+
+def test_ci_installs_exactly_the_scanners_config_pins(repo_root: Path) -> None:
+    """Why: `kiln scan` refuses any other version, so a mismatch would fail CI; this catches
+    it before a push, and keeps config the one place a pin is read from."""
+    pins = load_config(repo_root / "config/kiln.yaml").scanners
+    assert pins is not None
+    env = ci_workflow(repo_root)["env"]
+    assert env["OSV_SCANNER"] == f"{pins.osv_scanner.package}@{pins.osv_scanner.version}"
+    assert env["TRIVY"] == f"{pins.trivy.package}@{pins.trivy.version}"
+    assert env["SEMGREP_RULES_REPOSITORY"] == pins.semgrep.rules.repository
+    assert env["SEMGREP_RULES_COMMIT"] == pins.semgrep.rules.commit
+    requirements = (repo_root / ".github/scanners/semgrep-requirements.txt").read_text("utf-8")
+    assert re.search(rf"^semgrep=={re.escape(pins.semgrep.version)} \\$", requirements, re.M)
+
+
+def test_every_semgrep_requirement_is_pinned_with_its_hashes(repo_root: Path) -> None:
+    """Why: a package without a hash is one a compromised index could swap."""
+    text = (repo_root / ".github/scanners/semgrep-requirements.txt").read_text("utf-8")
+    body = "\n".join(line for line in text.splitlines() if not line.startswith("#"))
+    requirements = [block for block in re.split(r"\n(?=\S)", body.strip()) if block.strip()]
+    assert len(requirements) > 1
+    for requirement in requirements:
+        first = requirement.splitlines()[0]
+        assert re.match(r"^[a-z0-9._-]+==[^\s=]+ \\$", first), first
+        assert "--hash=sha256:" in requirement, first
+
+
+def test_ci_runs_each_scanner_on_the_repo_and_on_its_seeded_finding(repo_root: Path) -> None:
+    """Why: the slice's check is that every scanner is seen to detect, in CI, on every push."""
+    steps = ci_workflow(repo_root)["jobs"]["scanners"]["steps"]
+    runs = [" ".join(str(step.get("run", "")).split()) for step in steps]
+    for scanner in Scanner:
+        command = rf"uv run kiln scan {re.escape(scanner.value)}( --rules \S+)?"
+        assert any(re.fullmatch(command, run) for run in runs), f"no repo scan by {scanner}"
+        assert any(re.fullmatch(command + " --seeded", run) for run in runs), (
+            f"no seeded scan by {scanner}"
         )

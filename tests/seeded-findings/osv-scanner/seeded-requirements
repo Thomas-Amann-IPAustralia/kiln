@@ -1,0 +1,5 @@
+# A seeded finding for OSV-Scanner: CI proves the scanner still detects (D-013).
+# Synthetic. Never installed. Read as requirements.txt only by `kiln scan osv-scanner --seeded`;
+# the file name is one that neither OSV-Scanner nor a dependency bot picks up on its own.
+# PyYAML 5.3.1 has CVE-2020-14343 (critical), which OSV-Scanner must report.
+pyyaml==5.3.1

@@ -1,0 +1,137 @@
+{
+  "results": [
+    {
+      "source": {
+        "path": "{root}/tests/seeded-findings/osv-scanner/seeded-requirements",
+        "type": "lockfile"
+      },
+      "packages": [
+        {
+          "package": {
+            "name": "pyyaml",
+            "version": "5.3.1",
+            "ecosystem": "PyPI",
+            "purl": "pkg:pypi/pyyaml@5.3.1"
+          },
+          "groups": [
+            {
+              "ids": [
+                "PYSEC-2021-142",
+                "GHSA-8q59-q68h-6hv4"
+              ],
+              "aliases": [
+                "CVE-2020-14343",
+                "GHSA-8q59-q68h-6hv4",
+                "PYSEC-2021-142"
+              ],
+              "max_severity": "9.8"
+            }
+          ],
+          "vulnerabilities": [
+            {
+              "affected": [
+                {
+                  "package": {
+                    "ecosystem": "PyPI",
+                    "name": "pyyaml",
+                    "purl": "pkg:pypi/pyyaml"
+                  },
+                  "ranges": [
+                    {
+                      "events": [
+                        {
+                          "introduced": "0"
+                        },
+                        {
+                          "fixed": "5.4"
+                        }
+                      ],
+                      "type": "ECOSYSTEM"
+                    }
+                  ]
+                }
+              ],
+              "aliases": [
+                "CVE-2020-14343",
+                "GHSA-8q59-q68h-6hv4"
+              ],
+              "details": "Placeholder details for PYSEC-2021-142.",
+              "id": "PYSEC-2021-142",
+              "modified": "2023-11-08T04:02:26.414885Z",
+              "published": "2021-02-09T21:15:00Z",
+              "references": [
+                {
+                  "type": "WEB",
+                  "url": "https://example.invalid/advisory"
+                }
+              ],
+              "schema_version": "1.7.3"
+            },
+            {
+              "affected": [
+                {
+                  "package": {
+                    "ecosystem": "PyPI",
+                    "name": "pyyaml",
+                    "purl": "pkg:pypi/pyyaml"
+                  },
+                  "ranges": [
+                    {
+                      "events": [
+                        {
+                          "introduced": "0"
+                        },
+                        {
+                          "fixed": "5.4"
+                        }
+                      ],
+                      "type": "ECOSYSTEM"
+                    }
+                  ]
+                }
+              ],
+              "aliases": [
+                "CVE-2020-14343",
+                "PYSEC-2021-142"
+              ],
+              "database_specific": {
+                "cwe_ids": [
+                  "CWE-20"
+                ],
+                "github_reviewed": true,
+                "github_reviewed_at": "2021-03-25T21:15:23Z",
+                "nvd_published_at": "2021-02-09T21:15:00Z",
+                "severity": "CRITICAL"
+              },
+              "details": "Placeholder details for GHSA-8q59-q68h-6hv4.",
+              "id": "GHSA-8q59-q68h-6hv4",
+              "modified": "2026-02-04T03:33:10.792778Z",
+              "published": "2021-03-25T21:26:26Z",
+              "references": [
+                {
+                  "type": "WEB",
+                  "url": "https://example.invalid/advisory"
+                }
+              ],
+              "related": [
+                "CVE-2026-24009"
+              ],
+              "schema_version": "1.9.0",
+              "severity": [
+                {
+                  "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                  "type": "CVSS_V3"
+                },
+                {
+                  "score": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+                  "type": "CVSS_V4"
+                }
+              ],
+              "summary": "Placeholder summary for GHSA-8q59-q68h-6hv4."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

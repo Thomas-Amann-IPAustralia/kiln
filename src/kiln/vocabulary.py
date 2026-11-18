@@ -87,6 +87,20 @@ class Tripwire(StrEnum):
         return list(Tripwire).index(self) + 1
 
 
+class Severity(StrEnum):
+    """How bad a finding is, on one scale for every scanner (D-013).
+
+    Each scanner's own scale is mapped onto this one when its report is read. `unknown` is a
+    value: a finding whose scanner gave no severity is not thereby a small one.
+    """
+
+    CRITICAL = "critical"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    UNKNOWN = "unknown"
+
+
 class Gate(StrEnum):
     """The six checkpoints a solution passes in order."""
 

@@ -9,7 +9,8 @@ name: ci
 
 on:
   push:
-    branches: [main, "claude/**"]
+    # `ccr-**`: Claude Code's cloud sessions push to branches named so (D-013).
+    branches: [main, "claude/**", "ccr-**"]
   pull_request:
 
 permissions:
@@ -21,6 +22,12 @@ concurrency:
 
 env:
   UV_VERSION: "0.11.32"
+  # The scanner baseline (D-013). These must match config/kiln.yaml, `scanners`, and
+  # tests/test_repo_hygiene.py checks that they do; `kiln scan` refuses any other version.
+  SEMGREP_RULES_REPOSITORY: https://github.com/semgrep/semgrep-rules
+  SEMGREP_RULES_COMMIT: 16b9e6d45f10649f6a531ec4838ed9924372c3bc
+  OSV_SCANNER: github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.7.0
+  TRIVY: github.com/aquasecurity/trivy/cmd/trivy@v0.76.1
   GITLEAKS_VERSION: "8.30.1"
   # From gitleaks_8.30.1_checksums.txt on the release page.
   GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
@@ -71,3 +78,60 @@ jobs:
           rm gitleaks.tar.gz
       - name: Scan the whole history
         run: '"${RUNNER_TEMP}/bin/gitleaks" git --redact --no-banner --exit-code 1 .'
+
+  scanners:
+    # Semgrep CE, OSV-Scanner and Trivy on the repo, then each on its seeded finding, which it
+    # must detect: an empty report from a broken scanner looks exactly like a clean one. A new
+    # advisory against a locked package fails this job with no change to the repo; that is the
+    # point. See tests/seeded-findings/README.md.
+    name: scanners, and their seeded findings
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      # Go builds OSV-Scanner and Trivy from source. The Go module proxy serves each module and
+      # the toolchain it names, and the Go checksum database fixes their hashes for good, so a
+      # tag moved after the fact (as Trivy's were in March 2026) is refused, not built.
+      GOTOOLCHAIN: auto
+      GOFLAGS: -trimpath
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version-file: .python-version
+      - name: Install uv
+        run: python -m pip install --quiet "uv==${UV_VERSION}"
+      - name: Install locked dependencies
+        run: uv sync --locked
+      - name: Install Semgrep, every package checked against its hash
+        run: |
+          uv venv --quiet --python "$(command -v python)" "${RUNNER_TEMP}/semgrep"
+          uv pip install --quiet --python "${RUNNER_TEMP}/semgrep/bin/python" \
+            --require-hashes --no-deps -r .github/scanners/semgrep-requirements.txt
+          mkdir -p "${RUNNER_TEMP}/bin"
+          ln -s "${RUNNER_TEMP}/semgrep/bin/semgrep" "${RUNNER_TEMP}/bin/semgrep"
+      - name: Fetch Semgrep's rules at the pinned commit
+        run: |
+          git init --quiet "${RUNNER_TEMP}/semgrep-rules"
+          git -C "${RUNNER_TEMP}/semgrep-rules" fetch --quiet --depth 1 \
+            "${SEMGREP_RULES_REPOSITORY}" "${SEMGREP_RULES_COMMIT}"
+          git -C "${RUNNER_TEMP}/semgrep-rules" checkout --quiet FETCH_HEAD
+      - name: Build OSV-Scanner and Trivy from their Go modules
+        run: |
+          go version
+          GOBIN="${RUNNER_TEMP}/bin" go install "${OSV_SCANNER}"
+          GOBIN="${RUNNER_TEMP}/bin" go install "${TRIVY}"
+          echo "${RUNNER_TEMP}/bin" >> "${GITHUB_PATH}"
+      - name: Semgrep, on the repo
+        run: uv run kiln scan semgrep --rules "${RUNNER_TEMP}/semgrep-rules"
+      - name: Semgrep detects its seeded finding
+        run: uv run kiln scan semgrep --rules "${RUNNER_TEMP}/semgrep-rules" --seeded
+      - name: OSV-Scanner, on the repo
+        run: uv run kiln scan osv-scanner
+      - name: OSV-Scanner detects its seeded finding
+        run: uv run kiln scan osv-scanner --seeded
+      - name: Trivy, on the repo
+        run: uv run kiln scan trivy
+      - name: Trivy detects its seeded finding
+        run: uv run kiln scan trivy --seeded
