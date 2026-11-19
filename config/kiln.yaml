@@ -96,3 +96,70 @@ budgets:
     approved: >-
       Tom, 2026-11-17: "Before I agree or disagree, I permit you to spend up to $2 on OpenAI
       tokens to get a second opinion."
+
+# The spend ledger (D-013): every paid call reserves its upper-bound cost against a budget above
+# before it is sent, and settles at the real cost after. A reservation that could pass a budget
+# is refused; one that takes a budget to `warn_at` of its cap warns. Sketch, "Spend".
+spend:
+  ledger: docs/spend/ledger.jsonl
+  warn_at: 0.8
+
+# The scanner baseline (D-013): Semgrep CE, OSV-Scanner and Trivy, feeding one finding format
+# (src/kiln/findings.py). CI installs exactly these versions and `kiln scan` refuses any other;
+# tests/test_repo_hygiene.py checks that the workflow and this file agree. Each scanner has a
+# seeded finding that CI must see it detect, so a scanner that silently stops finding things
+# fails CI instead of passing it.
+scanners:
+  # The charter: "critical or high findings are fixed or explained before G4". `unknown` blocks
+  # too, because nothing shows it is smaller (inferred, D-013).
+  blocking: [critical, high, unknown]
+  # Each dismissal is one finding's key, a reason, who and when. This file is in CODEOWNERS.
+  dismissals: config/dismissals.yaml
+  # The only environment variables a scanner sees: enough to run and to reach the network
+  # through a proxy, and no credential. Trivy's release pipeline was compromised in March 2026
+  # (CVE-2026-33634) to steal exactly what a CI job's environment holds.
+  environment: [PATH, HOME, TMPDIR, LANG, LC_ALL, HTTPS_PROXY, https_proxy, HTTP_PROXY,
+                http_proxy, NO_PROXY, no_proxy, SSL_CERT_FILE, SSL_CERT_DIR, REQUESTS_CA_BUNDLE,
+                XDG_CACHE_HOME]
+  timeout_seconds: 900
+
+  # Source weaknesses. Installed from PyPI with every package's hash checked
+  # (.github/scanners/semgrep-requirements.txt). Rules from one commit of semgrep-rules, fetched
+  # by CI and never copied into this repo (Semgrep Rules License v1.0 allows internal use).
+  semgrep:
+    version: 1.183.0            # uploaded 2026-10-29
+    rules:
+      repository: https://github.com/semgrep/semgrep-rules
+      commit: 16b9e6d45f10649f6a531ec4838ed9924372c3bc  # 2026-10-21
+      packs: [python, yaml/github-actions]
+    # Test code runs only in CI, with a read-only token. Semgrep skips tests by default; its
+    # rules gave four false positives on Kiln's tests in their first run (D-013).
+    exclude: [tests]
+    seeded:
+      target: tests/seeded-findings/semgrep
+      rule: python.lang.security.audit.subprocess-shell-true
+
+  # Dependency vulnerabilities, from OSV.dev's advisories, read live: a new advisory against a
+  # locked package fails CI with no change here, which is the point.
+  osv_scanner:
+    module: github.com/google/osv-scanner/v2
+    package: github.com/google/osv-scanner/v2/cmd/osv-scanner
+    version: v2.7.0             # tagged 2026-10-12
+    seeded:
+      target: tests/seeded-findings/osv-scanner/seeded-requirements
+      parse_as: requirements.txt
+      rule: CVE-2020-14343
+
+  # Misconfiguration in Dockerfiles and infrastructure code, with the checks built into this
+  # version. Its vulnerability scanning would repeat OSV-Scanner's on uv.lock, so it is off until
+  # there is a container image to scan. v0.69.4 was the malicious release; v0.76.1 is seven
+  # releases later, and the Go module proxy serves it (it refuses v0.69.4).
+  trivy:
+    module: github.com/aquasecurity/trivy
+    package: github.com/aquasecurity/trivy/cmd/trivy
+    version: v0.76.1            # tagged 2026-10-21
+    scanners: [misconfig]
+    exclude: [tests/seeded-findings]
+    seeded:
+      target: tests/seeded-findings/trivy
+      rule: DS-0002

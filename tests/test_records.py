@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from kiln import records
+from kiln import records, review, spend
+from kiln.config import SpendConfig
+from kiln.vocabulary import Actor, Basis
 from tests.test_cards import PLAN, make_card, write_card
 
 
@@ -156,3 +159,86 @@ def test_a_card_resting_on_a_changed_file_fails_the_records_check(repo: Path) ->
     assert messages(repo) == []
     (repo / PLAN).write_text("# Placeholder plan, edited\n")
     assert any("needs a new card" in m for m in messages(repo))
+
+
+def add_paid_response(repo: Path, usd: float = 0.25, *, settled: bool = True) -> str:
+    """One cached review response, and (unless `settled` is false) its ledger entries."""
+    digest = "a" * 64
+    path = f"docs/reviews/cache/{digest}.json"
+    record = review.ReviewRecord(
+        request_sha256=digest,
+        spec="docs/reviews/spec.yaml",
+        budget="small",
+        model="example-model",
+        effort="high",
+        request={},
+        http_status=200,
+        status="completed",
+        incomplete_reason=None,
+        usage=None,
+        usd=usd,
+        estimate=review.Estimate(
+            input_tokens_bound=1, output_tokens_bound=1, usd_bound=0.5, assumes="fixture"
+        ),
+        answer="Placeholder answer.",
+        response=None,
+    )
+    (repo / "docs/reviews/cache").mkdir(parents=True)
+    (repo / path).write_text(record.model_dump_json(indent=2) + "\n", encoding="utf-8")
+    if settled:
+        at = datetime(2026, 11, 18, 9, 0, tzinfo=UTC)
+        entries = [
+            spend.Reservation(
+                entry=1,
+                at=at,
+                budget="small",
+                usd=0.5,
+                command="kiln review",
+                ref=f"sha256:{digest}",
+                by=Actor.BUILD_SESSION,
+            ),
+            spend.Settlement(
+                entry=2,
+                at=at,
+                reservation=1,
+                usd=0.25,
+                outcome="completed",
+                basis=Basis.OBSERVED,
+                record=path,
+                by=Actor.BUILD_SESSION,
+            ),
+        ]
+        ledger = repo / SpendConfig().ledger
+        ledger.parent.mkdir(parents=True, exist_ok=True)
+        ledger.write_text(
+            "".join(spend.canonical_line(entry) + "\n" for entry in entries), encoding="utf-8"
+        )
+    return path
+
+
+def test_a_paid_response_in_the_ledger_agrees(repo: Path) -> None:
+    """Why: the fixture for the three tests below must start clean."""
+    add_paid_response(repo)
+    assert records.check_spend(repo) == []
+
+
+def test_a_paid_response_missing_from_the_ledger_is_found(repo: Path) -> None:
+    """Why: spend recorded only beside its response is spend the budget guard cannot see."""
+    path = add_paid_response(repo, settled=False)
+    problems = records.check_spend(repo)
+    assert [(p.path.as_posix(), "has 0" in p.message) for p in problems] == [(path, True)]
+
+
+def test_a_ledger_that_disagrees_with_its_response_is_found(repo: Path) -> None:
+    """Why: two records of one cost that differ mean one of them is wrong."""
+    add_paid_response(repo, usd=0.30)
+    (problem,) = records.check_spend(repo)
+    assert "records $0.3" in problem.message
+
+
+def test_a_ledger_naming_a_missing_response_is_found(repo: Path) -> None:
+    """Why: a cost must rest on a committed record of the call."""
+    path = add_paid_response(repo)
+    (repo / path).unlink()
+    (problem,) = records.check_spend(repo)
+    assert "which is missing" in problem.message

@@ -4,7 +4,7 @@ The records are how one session hands work to the next (CLAUDE.md, "Records"). E
 guards a way they have gone stale before: a skipped decision number, an ADR missing from its
 index, a handover that names the wrong next number, a seed document changed under its
 snapshot, a link to a file that moved, a decision card edited without re-rendering or
-resting on a file that has since changed.
+resting on a file that has since changed, a paid response missing from the spend ledger.
 """
 
 from __future__ import annotations
@@ -15,7 +15,9 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from kiln import cards
+from kiln import cards, review, spend
+from kiln.config import DEFAULT_CONFIG_PATH, SpendConfig, load_config
+from kiln.errors import KilnError
 
 DECISIONS = Path("docs/decisions.md")
 HANDOVER = Path("docs/handover.md")
@@ -228,6 +230,54 @@ def check_cards(root: Path) -> list[Problem]:
     ]
 
 
+def check_spend(root: Path) -> list[Problem]:
+    """The spend ledger is valid and append-only, and every cached paid response has exactly
+    one settlement for its cost, against its budget (D-013)."""
+    settings = SpendConfig()
+    try:
+        if (root / DEFAULT_CONFIG_PATH).is_file():
+            settings = load_config(root / DEFAULT_CONFIG_PATH).spend
+        ledger = spend.read_ledger(root / settings.ledger)
+        responses = review.cached_records(root)
+    except KilnError as exc:
+        return [Problem(Path(exc.item or settings.ledger), exc.cause)]
+    problems: list[Problem] = []
+    reservations = ledger.reservations()
+    by_record: dict[str, list[spend.Settlement]] = {}
+    for number, settlement in sorted(ledger.settlements().items()):
+        if settlement.record is None:
+            continue
+        by_record.setdefault(settlement.record, []).append(settlement)
+        if not (root / settlement.record).is_file():
+            problems.append(
+                Problem(
+                    Path(settings.ledger),
+                    f"reservation {number} is settled from {settlement.record}, which is missing",
+                )
+            )
+    for path, record in responses:
+        settled = by_record.get(path, [])
+        if len(settled) != 1:
+            problems.append(
+                Problem(
+                    Path(path),
+                    f"a paid response needs one settlement in the spend ledger; it has "
+                    f"{len(settled)}",
+                )
+            )
+            continue
+        budget = reservations[settled[0].reservation].budget
+        if (round(settled[0].usd, 6), budget) != (round(record.usd, 6), record.budget):
+            problems.append(
+                Problem(
+                    Path(path),
+                    f"the ledger settles ${settled[0].usd} against {budget!r}; the response "
+                    f"records ${record.usd} against {record.budget!r}",
+                )
+            )
+    return problems
+
+
 def check_all(root: Path) -> list[Problem]:
     return [
         *check_decisions(root),
@@ -235,5 +285,6 @@ def check_all(root: Path) -> list[Problem]:
         *check_adrs(root),
         *check_seeds(root),
         *check_cards(root),
+        *check_spend(root),
         *check_links(root),
     ]

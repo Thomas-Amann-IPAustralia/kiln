@@ -11,7 +11,7 @@ import pytest
 import yaml
 from typer.testing import CliRunner
 
-from kiln import review
+from kiln import review, spend
 from kiln.cli import app
 from kiln.config import KilnConfig, Prices
 from kiln.errors import KilnError
@@ -121,6 +121,21 @@ def respond(body: dict[str, Any], status: int = 200) -> Handler:
 
 def never(_request: httpx.Request) -> httpx.Response:
     raise AssertionError("a request was sent")
+
+
+def ledger(repo: Path) -> spend.Ledger:
+    return spend.read_ledger(repo / CONFIG.spend.ledger)
+
+
+def committed(repo: Path) -> float:
+    return ledger(repo).position("small", CONFIG.budgets["small"].usd).committed
+
+
+def raising(error: Exception) -> Handler:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        raise error
+
+    return handler
 
 
 def test_the_request_pins_what_leaves_the_machine(repo: Path) -> None:
@@ -269,7 +284,7 @@ def test_confirm_sends_to_the_configured_host_and_records_the_cost(repo: Path) -
     assert json.loads(seen[0].content) == plan.request
     assert record.answer == "Looks sound."
     assert record.usd == pytest.approx((800 * 2.0 + 200 * 0.1 + 300 * 10.0) / 1e6)
-    assert review.recorded_spend(repo, "small") == pytest.approx(record.usd)
+    assert committed(repo) == pytest.approx(record.usd)
 
 
 def test_a_cached_request_is_never_sent_twice(repo: Path) -> None:
@@ -312,7 +327,7 @@ def test_a_truncated_answer_is_recorded_because_it_was_billed(repo: Path) -> Non
     record = review.run(plan, CONFIG, repo, client(respond(body)), env={})
     assert record.status == "incomplete"
     assert record.incomplete_reason == "max_output_tokens"
-    assert review.recorded_spend(repo, "small") > 0
+    assert committed(repo) > 0
     assert "max_output_tokens" in review.render(record)
 
 
@@ -369,3 +384,78 @@ def test_the_cli_dry_run_estimates_and_sends_nothing(
     assert result.exit_code == 0, result.output
     assert "Estimate: up to $" in result.output
     assert not (repo / "docs").exists()
+
+
+def test_a_review_is_reserved_at_its_bound_and_settled_at_its_cost(repo: Path) -> None:
+    """Why: the ledger is the one meter for every paid call, and names the record behind it."""
+    plan = review.plan(repo / "spec.yaml", CONFIG, repo)
+    record = review.run(plan, CONFIG, repo, client(respond(COMPLETED)), env={})
+    reserve, settle = ledger(repo).entries
+    assert isinstance(reserve, spend.Reservation) and isinstance(settle, spend.Settlement)
+    assert reserve.usd == plan.estimate.usd_bound
+    assert reserve.ref == f"sha256:{plan.request_sha256}"
+    assert settle.usd == record.usd
+    assert settle.basis.value == "observed"
+    assert settle.record == f"docs/reviews/cache/{plan.request_sha256}.json"
+
+
+def test_a_cached_review_touches_no_ledger(repo: Path) -> None:
+    """Why: a re-run that spends nothing must not reserve anything either."""
+    plan = review.plan(repo / "spec.yaml", CONFIG, repo)
+    review.run(plan, CONFIG, repo, client(respond(COMPLETED)), env={})
+    review.run(review.plan(repo / "spec.yaml", CONFIG, repo), CONFIG, repo, client(never), env={})
+    assert len(ledger(repo).entries) == 2
+
+
+def test_a_request_that_never_left_settles_at_nothing(repo: Path) -> None:
+    """Why: a connection refused before sending cannot have been billed."""
+    plan = review.plan(repo / "spec.yaml", CONFIG, repo)
+    failing = client(raising(httpx.ConnectError("refused")))
+    with pytest.raises(KilnError, match="nothing was spent"):
+        review.run(plan, CONFIG, repo, failing, env={})
+    assert ledger(repo).open() == []
+    assert committed(repo) == 0
+
+
+def test_a_timeout_after_sending_keeps_its_bound_reserved(repo: Path) -> None:
+    """Why: the provider may have billed a request it received; the ledger may overstate
+    spend, never understate it."""
+    plan = review.plan(repo / "spec.yaml", CONFIG, repo)
+    failing = client(raising(httpx.ReadTimeout("slow")))
+    with pytest.raises(KilnError, match="may have been billed; ledger reservation 1"):
+        review.run(plan, CONFIG, repo, failing, env={})
+    assert [r.entry for r in ledger(repo).open()] == [1]
+    assert committed(repo) == plan.estimate.usd_bound
+
+
+def test_a_refused_request_settles_as_unbilled_on_an_assumed_basis(repo: Path) -> None:
+    """Why: an error response is taken as free, and the record says that is an assumption."""
+    plan = review.plan(repo / "spec.yaml", CONFIG, repo)
+    with pytest.raises(KilnError, match="HTTP 429"):
+        review.run(plan, CONFIG, repo, client(respond({"error": {"message": "slow"}}, 429)), env={})
+    (settled,) = ledger(repo).settlements().values()
+    assert (settled.usd, settled.basis.value) == (0.0, "assumed")
+
+
+def test_a_response_with_no_usage_is_charged_at_its_bound(repo: Path) -> None:
+    """Why: an unknown cost is never counted as free."""
+    plan = review.plan(repo / "spec.yaml", CONFIG, repo)
+    body = {key: value for key, value in COMPLETED.items() if key != "usage"}
+    record = review.run(plan, CONFIG, repo, client(respond(body)), env={})
+    assert record.usd == plan.estimate.usd_bound
+    (settled,) = ledger(repo).settlements().values()
+    assert (settled.usd, settled.basis.value) == (plan.estimate.usd_bound, "assumed")
+
+
+def test_the_dry_run_warns_when_a_request_may_take_the_budget_past_80_percent(
+    repo: Path,
+) -> None:
+    """Why: the warning comes before the money is spent, while Tom can still say stop."""
+    plan = review.plan(repo / "spec.yaml", CONFIG, repo)
+    near = plan.estimate.usd_bound / 0.85
+    tight = CONFIG.model_copy(
+        update={"budgets": {"small": CONFIG.budgets["small"].model_copy(update={"usd": near})}}
+    )
+    warned = review.plan(repo / "spec.yaml", tight, repo)
+    assert warned.warning is not None
+    assert "may reach 85%" in warned.warning

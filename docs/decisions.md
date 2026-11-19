@@ -658,3 +658,140 @@ an edited card still counting, Tom's gates needing no card) made at least one te
 
 **Consequences.** Slice 3 (scanners and the spend ledger) is next. Slice 4 makes the verifier
 the only writer of G3's ticket results.
+
+## D-013 — Slice 3 built: the scanner baseline, one finding format, and the spend ledger (2026-11-18)
+
+**Context.** Tom asked for slice 3 of the approved sketch (D-010): "Semgrep CE, OSV-Scanner and
+Trivy in CI, pinned, feeding one finding format. The spend ledger, shared by every paid
+command." It is checked by two things: each scanner fails CI on a seeded finding, and the
+ledger refuses a call that could pass a cap and warns at 80%.
+
+**Found at source first.**
+
+- **Trivy's release pipeline was compromised in March 2026** (supported: CVE-2026-33634,
+  advisory GHSA-69fq-xp46-6x23, and Aqua's own post on the attack). Trivy v0.69.4 was a
+  malicious release, built to steal what a CI job's environment holds, and the tags of Aqua's
+  `trivy-action` and `setup-trivy` were moved to malicious commits. The Go module proxy refuses
+  to serve v0.69.4 as "malicious" (observed). Trivy is named by the charter and the approved
+  sketch, so it stays, pinned as in 1 and 5 below; for Tom under "These can wait".
+- **Semgrep's built-in ignore list skips `tests/`,** even when a folder under it is named as the
+  target (observed). Semgrep prefixes each rule id with the rules folder's path, relative to the
+  working directory when it can be and absolute otherwise, and reports offsets in bytes
+  (observed, Semgrep 1.183.0).
+- **The first scan of LangGraph's packages** (handover, open item 12): OSV-Scanner read all 63
+  packages in `uv.lock` and found no known vulnerability (observed, 2026-11-18).
+
+**Decision (Claude; engineering inside the approved slice).**
+
+1. **Pinned at every layer, and checked before each run.** Every version is at least two weeks
+   old (D-012's rule).
+   - *Semgrep CE 1.183.0* from PyPI, with all 66 packages pinned with their hashes
+     (`.github/scanners/semgrep-requirements.txt`). Its *rules* come from one commit of
+     `semgrep-rules` (`16b9e6d`, 21 October), the `python` and `yaml/github-actions` packs,
+     fetched by CI and not copied into the repo: a registry ruleset can change under the same
+     name, and the Semgrep Rules License v1.0 allows internal use.
+   - *OSV-Scanner v2.7.0 and Trivy v0.76.1* are built by `go install` from the Go module proxy.
+     The Go checksum database fixes each version's hash for good, so a tag moved after the fact,
+     as Trivy's were, is refused rather than built. GitHub's release pages, which the gitleaks
+     job uses, are not reachable from this session, so their checksums could not be checked
+     here; the module route was verified end to end. It costs about six minutes of build time
+     per CI run (90 seconds and 4.5 minutes on four cores here).
+   - *`kiln scan` refuses another version.* For the Go scanners it reads the build information
+     in the binary (`go version -m`), because a source build of Trivy reports its version as
+     `dev`. A hygiene test keeps CI's pins and config's equal.
+2. **One finding format** (`kiln.findings`): the scanner, the rule, one severity scale
+   (`critical`, `high`, `medium`, `low`, `unknown`), a file or package location, CWE ids, a
+   reference, and a key. The key hashes what was matched (the bytes for Semgrep, the cause lines
+   for a Trivy check, the package and version for a vulnerability), so it survives lines moving
+   above a finding and changes when the code under it does. Semgrep's `ERROR` maps to `high`,
+   `WARNING` to `medium` and `INFO` to `low`. OSV-Scanner's score maps by the CVSS
+   specification's ratings, or failing a score by the databases' own words, or else to
+   `unknown`. OSV-Scanner's grouped records of one vulnerability are one finding, named by its
+   CVE where it has one. A scan's findings are regenerated on every run, so they carry no
+   `FND-` number; that id is for a finding kept as a record, which arrives with the Security
+   Architect.
+3. **What blocks: `critical`, `high` and `unknown`** (inferred). The charter says critical and
+   high findings are fixed or explained before G4; `unknown` blocks too, because nothing shows
+   it is smaller. Medium and low findings are printed on every run and do not fail it.
+4. **One way to set a finding aside:** `config/dismissals.yaml`, which is in CODEOWNERS. Each
+   entry names one key, the reason, who and when, and must agree with its finding's rule and
+   path. The scanners' own routes are shut: Semgrep runs with `--disable-nosem`, and `kiln scan`
+   refuses to run where a `.trivyignore`, `.trivyignore.yaml`, `trivy.yaml` or
+   `osv-scanner.toml` exists. A dismissal that matches nothing is reported as stale.
+5. **A scanner sees only an allowlisted environment** (config, `scanners.environment`): enough to
+   run and reach the network, and no credential. This session's own environment holds GitHub,
+   AWS and cloud tokens (observed, by name only), which is exactly what the malicious Trivy
+   release stole.
+6. **Seeded findings,** one per scanner, in `tests/seeded-findings/`. `kiln scan --seeded`
+   succeeds only if the planted finding is reported at a blocking severity, so a scanner that
+   silently stops detecting fails CI instead of passing it. OSV-Scanner's fixture has a file
+   name that neither it nor a dependency bot reads by itself.
+7. **What each scan covers.** Semgrep scans the files git tracks, minus `tests/`: test code runs
+   only in CI with a read-only token, Semgrep leaves tests out by default, and its first scan of
+   Kiln's tests gave four false positives: three read `subprocess.CompletedProcess(...)`, which
+   builds a result, as running a command, and one flagged the race test's deliberate sleep. Trivy checks misconfiguration only, with the checks
+   built into its version and no database: its vulnerability scanning would repeat OSV-Scanner's
+   on `uv.lock`, so it waits for a container image to scan. OSV-Scanner reads every lockfile.
+8. **The spend ledger** (`kiln.spend`, `docs/spend/ledger.jsonl`). A paid call reserves its
+   upper bound before it is sent and settles at its real cost after. A reservation is refused if
+   settled spend plus open reservations plus its bound could pass the cap, and warns when it may
+   take the budget to 80% (config, `spend.warn_at`). Once settled spend passes a cap, tripwire 4
+   refuses every call against that budget and `kiln spend` exits 2. A lock makes the check and
+   the append one step. Entries are canonical JSON lines, numbered and appended, never
+   rewritten.
+   - `kiln review` now spends only through it. A request refused before it left settles at $0;
+     an error response settles at $0 on an `assumed` basis; a timeout after sending leaves the
+     reservation open at its bound until `kiln spend settle` records the provider's figure. A
+     response that reports no usage is now charged at its bound. **This corrects `kiln review`,
+     which recorded such a response at $0:** no recorded response had that shape, so no figure
+     changes.
+   - The three recorded reviews are backfilled, each timed at the commit that recorded it. The
+     ledger's total is $0.3792, D-007's figure. `kiln records check` now requires each cached
+     response to have exactly one settlement, for its cost, against its budget.
+9. **CI runs on `ccr-**` branches** too, which is how this session's cloud branches are named
+   (closes handover open item 10). A change to `.github/`, for Tom's review when he merges.
+
+**What the first scans found** (observed). Trivy found nothing in the repo. Semgrep found 14
+things in `src/`; I read each by hand. Thirteen are `medium` and wrong in
+context: nine implicit string joins in lists, which are deliberate; three reads of httpx's
+`is_success`, a property the rule takes for a method; and one regex that reads only Kiln's own
+files. One is `high`, in this slice's own code: `run_process` builds a scanner's command from
+config and fixed strings, with no shell. It is dismissed with that reason rather than rewritten
+to dodge the pattern.
+
+**Corrected after CI's first run.** This entry first said OSV-Scanner found nothing. That was
+true of my scan here, made before `.github/scanners/semgrep-requirements.txt` existed. CI's
+first full run (run 13, commit `026df7e`) read that file too, and failed on Semgrep's own
+dependencies: `mcp` 1.29.0 has one `high` advisory (CVE-2026-59951) and three `medium`, and
+`opentelemetry-api` 1.37.0 has two `medium` (observed; reproduced here, with the same keys).
+Every Semgrep release up to 1.186.0 pins `mcp==1.29.0` exactly, so no release can take the fix.
+All six concern code Kiln never runs: an MCP HTTP server, MCP client transports, and parsing of
+inbound trace headers. Kiln runs only `semgrep scan`. The `high` one is dismissed with that
+reason; the five `medium` ones do not block and are printed on every run. This is the
+mechanism doing what it is for: the job failed, the finding was read, and it was explained.
+
+**Checked.** `make check` passes: 273 tests (157 before), none touching the network. With the
+pinned binaries in this session, the three repo scans pass (Semgrep with one dismissal) and each
+seeded finding is detected: Semgrep's `subprocess-shell-true` (high), OSV-Scanner's
+CVE-2020-14343 (critical), Trivy's DS-0002 (high). Semgrep installs cleanly from the committed
+requirements. Each of 15 deliberate breaks made at least one test fail: no lock; a seeded check
+that ignores severity; the whole environment passed through; suppression files allowed; any exit
+code taken as a finished scan; no build-information check; dismissals applied to a seeded run; a
+Semgrep key by line number; an unknown severity word graded low; open reservations not counted;
+no 80% warning; the tripwire not enforced; a timeout settled at $0; the ledger not checked
+against responses; and CI's pins drifting from config. **On GitHub:** run 13 passed lint,
+types, tests, records and gitleaks; its `scanners` job built both Go tools in 4 minutes 12
+seconds, passed both Semgrep steps, and failed on the `mcp` advisory above. The run after this
+correction is the first expected to pass in full; the handover records its result.
+
+**Limits, stated plainly.** The ledger is a file in git, so it is per branch: two sessions on
+two branches could together pass a budget (for Tom under "These can wait"). Advisory data is
+read live, so CI can go red with no change here when a new advisory lands; that is the point.
+The scanners' own reports are not kept as CI artifacts; the log holds Kiln's summary and each
+report's hash. Trivy does not write the CycloneDX SBOM yet (charter, Security Architect). The
+lock needs POSIX (Linux, macOS).
+
+**Spend:** $0. The scans call OSV.dev's free API.
+
+**Consequences.** Slice 5's sandbox reserves each run's cap in this ledger. Slice 4 (tickets and
+the verifier) is independent of this slice and can be next.

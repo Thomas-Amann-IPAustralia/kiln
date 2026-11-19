@@ -13,15 +13,21 @@ import typer
 from kiln import approvals as approvals_module
 from kiln import cards as cards_module
 from kiln import doctor as doctor_module
+from kiln import findings as findings_module
 from kiln import gates as gates_module
 from kiln import records as records_module
 from kiln import review as review_module
+from kiln import scanners as scanners_module
+from kiln import spend as spend_module
 from kiln.config import DEFAULT_CONFIG_PATH, load_config
 from kiln.errors import EXIT_FAILURE, KilnError
+from kiln.vocabulary import Actor, Basis
 
 app = typer.Typer(no_args_is_help=True, add_completion=False, help="Kiln: the software factory.")
 records_app = typer.Typer(no_args_is_help=True, help="The repo's records.")
 app.add_typer(records_app, name="records")
+spend_app = typer.Typer(help="The spend ledger: every paid call against a budget Tom set.")
+app.add_typer(spend_app, name="spend")
 
 
 def _fail(message: str) -> typer.Exit:
@@ -84,10 +90,12 @@ def review(
         f"({the_plan.estimate.input_tokens_bound:,} input and "
         f"{the_plan.estimate.output_tokens_bound:,} output tokens at most; assumes "
         f"{the_plan.estimate.assumes})\n"
-        f"Budget {the_plan.budget!r}: ${the_plan.spent_usd:.4f} spent of "
-        f"${the_plan.budget_usd:.2f}, ${left:.4f} left"
+        f"Budget {the_plan.budget!r}: ${the_plan.spent_usd:.4f} committed of "
+        f"${the_plan.budget_usd:.2f}, ${left:.4f} left (kiln spend shows the ledger)"
         + ("\nCached: re-running costs nothing." if the_plan.cached else "")
     )
+    if the_plan.warning:
+        typer.echo(the_plan.warning, err=True)
     if dry_run:
         if print_request:
             typer.echo(json.dumps(the_plan.request, indent=2, ensure_ascii=False))
@@ -164,6 +172,114 @@ def gates(
     failed = [o.gate.value for o in outcomes if o.status is gates_module.GateStatus.FAILED]
     if failed:
         raise _fail(f"{', '.join(failed)} failed | see: src/kiln/gates.py")
+
+
+@app.command()
+def scan(
+    scanner: Annotated[findings_module.Scanner, typer.Argument(help="The scanner to run.")],
+    seeded: Annotated[
+        bool,
+        typer.Option(
+            "--seeded",
+            help="Scan the planted finding instead, and succeed only if it is found.",
+        ),
+    ] = False,
+    rules: Annotated[
+        Path | None,
+        typer.Option(help="Semgrep only: a checkout of the pinned rules commit."),
+    ] = None,
+    root: Annotated[Path, typer.Option(help="Repo root.")] = Path(),
+    config_path: Annotated[
+        Path, typer.Option("--config", help="Config file.")
+    ] = DEFAULT_CONFIG_PATH,
+) -> None:
+    """Run one pinned scanner and report its findings in Kiln's one format. Exits 2 on an open
+    finding at a blocking severity, or if the scanner did not run as pinned. Free."""
+    try:
+        config = load_config(config_path)
+        report = scanners_module.scan(config, scanner, root, seeded=seeded, rules_dir=rules)
+        assert config.scanners is not None  # scan() refuses a config without them
+        dismissals = findings_module.load_dismissals(root / config.scanners.dismissals)
+        assessment = findings_module.assess(report, dismissals, config.scanners.blocking)
+    except KilnError as exc:
+        raise _fail(exc.one_line()) from exc
+    typer.echo(findings_module.render(assessment))
+    if seeded:
+        found = scanners_module.seeded_finding(report, config.scanners)
+        if found is None:
+            raise _fail(
+                f"{scanner.value} did not report its seeded finding at a blocking severity, so "
+                f"it is not detecting what it should | item: {report.target} | "
+                "see: config/kiln.yaml, scanners"
+            )
+        typer.echo(
+            f"Seeded finding detected: {found.rule} ({found.severity.value}) at "
+            f"{found.location.where()}. {scanner.value} detects, and a finding like it fails CI."
+        )
+        return
+    blocking = assessment.open_blocking
+    if blocking:
+        raise _fail(
+            f"{len(blocking)} open finding(s) at a blocking severity from {scanner.value}; "
+            "fix each, or dismiss it with a reason | see: config/dismissals.yaml"
+        )
+
+
+@spend_app.callback(invoke_without_command=True)
+def spend_report(
+    ctx: typer.Context,
+    root: Annotated[Path, typer.Option(help="Repo root.")] = Path(),
+    config_path: Annotated[
+        Path, typer.Option("--config", help="Config file.")
+    ] = DEFAULT_CONFIG_PATH,
+) -> None:
+    """Show where each budget stands, and any reservation still open. Exits 2 if tripwire 4
+    (spend over budget) has tripped. Free."""
+    if ctx.invoked_subcommand is not None:
+        return
+    try:
+        config = load_config(config_path)
+        ledger = spend_module.read_ledger(root / config.spend.ledger)
+    except KilnError as exc:
+        raise _fail(exc.one_line()) from exc
+    typer.echo(spend_module.render(config, ledger))
+    tripped = [p.budget for p in spend_module.positions(config, ledger) if p.tripped]
+    if tripped:
+        raise _fail(
+            f"tripwire 4: spend is over budget on {', '.join(tripped)}; stop and ask Tom | "
+            "see: AGENTS.md, 'Authority and money'"
+        )
+
+
+@spend_app.command("settle")
+def spend_settle(
+    reservation: Annotated[int, typer.Argument(help="The open reservation's entry number.")],
+    usd: Annotated[float, typer.Option(help="What the call really cost, in US dollars.")],
+    outcome: Annotated[str, typer.Option(help="What happened to the call.")],
+    note: Annotated[str, typer.Option(help="Where the cost was read, such as a usage page.")],
+    basis: Annotated[Basis, typer.Option(help="How the cost is known.")] = Basis.OBSERVED,
+    root: Annotated[Path, typer.Option(help="Repo root.")] = Path(),
+    config_path: Annotated[
+        Path, typer.Option("--config", help="Config file.")
+    ] = DEFAULT_CONFIG_PATH,
+) -> None:
+    """Settle a reservation a paid command left open, such as a call that timed out after it
+    was sent, from the provider's own record of the cost. Free."""
+    try:
+        config = load_config(config_path)
+        settled = spend_module.settle(
+            root,
+            config,
+            reservation,
+            usd=usd,
+            outcome=outcome,
+            basis=basis,
+            by=Actor.BUILD_SESSION,
+            note=note,
+        )
+    except KilnError as exc:
+        raise _fail(exc.one_line()) from exc
+    typer.echo(f"Settled reservation {reservation} at ${settled.usd:.4f} (entry {settled.entry}).")
 
 
 @records_app.command("check")

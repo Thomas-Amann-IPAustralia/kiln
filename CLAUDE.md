@@ -9,11 +9,12 @@ Tom's team a test-ready build; nothing reaches production before a real-world te
 experts. Tom is the owner and is not a subject-matter expert: the work must stand up to an
 expert's scrutiny without one in the room.
 
-**Current scope: phase 0 of 6 (the shared core). Slices 1 and 2 of 9 are built.**
+**Current scope: phase 0 of 6 (the shared core). Slices 1 to 3 of 9 are built.**
 The repo holds the rulebook, the records, the live charter, CI, the record formats and decision
-cards (slice 1), the gates G0 to G5 (slice 2), the free commands (`kiln doctor`, `kiln records
-check` and `render`, `kiln approvals`, `kiln gates`) and one paid one (`kiln review`, a second opinion from another
-provider's model). Tom approved the phase 0 sketch,
+cards (slice 1), the gates G0 to G5 (slice 2), the scanner baseline and the spend ledger
+(slice 3), the free commands (`kiln doctor`, `kiln records check` and `render`, `kiln
+approvals`, `kiln gates`, `kiln scan`, `kiln spend`) and one paid one (`kiln review`, a second
+opinion from another provider's model). Tom approved the phase 0 sketch,
 [`docs/sketches/phase-0-shared-core.md`](docs/sketches/phase-0-shared-core.md), on 2026-11-18
 (D-010); build its slices in order, and treat the sketch as approved and frozen. The only budget is
 Tom's $2 for a second opinion on the docs ($0.38 spent, D-007); **no other paid call is
@@ -107,8 +108,9 @@ line to [`docs/friction-log.md`](docs/friction-log.md) in that turn.
 - **Experiments** follow SOP §12: the grid, the choice rule and the headline are committed
   before any real number; choose on dev, report on test; a judge never shares the model family
   it grades and is checked on answers with known faults before its grades are trusted.
-- **Money** follows SOP §14 and `AGENTS.md`: every paid response is cached and committed, and
-  every decision entry records its spend, failed runs included.
+- **Money** follows SOP §14 and `AGENTS.md`: every paid call reserves and settles through the
+  spend ledger (`kiln.spend`), every paid response is cached and committed, and every decision
+  entry records its spend, failed runs included.
 - **A review by the model that wrote the work is a self-review.** For an independent one, use
   `kiln review` with another provider, within a budget Tom set.
 
@@ -133,10 +135,13 @@ measured and adopted (D-005, F2).
 | Decision cards | `docs/cards/`, `CARD-NNNN` | Each decision put to Tom, with his answer once given. Never edited after approval: superseded by a new card. |
 | Sketches | `docs/sketches/` | A design proposed for Tom's approval before a major component is built. Frozen once approved. |
 | Reviews | `docs/reviews/` | Second opinions: the spec, the answer and the cached response with its cost. |
+| Spend ledger | [`docs/spend/ledger.jsonl`](docs/spend/ledger.jsonl) | Every paid call, reserved at its bound and settled at its cost. Append-only; written only through `kiln.spend`. |
+| Dismissals | [`config/dismissals.yaml`](config/dismissals.yaml) | Each scanner finding set aside, with its reason. The only way to set one aside; Tom sees each when he merges. |
 | Seeds | `docs/repo-seeds/` | Sealed inputs, with a hash manifest. |
 
 `kiln records check` checks that these agree in structure, in CI and before each commit:
-numbering, dates, the index, the seed hashes and links. It cannot check that they agree in
+numbering, dates, the index, the seed hashes, links, and the spend ledger against every cached
+response. It cannot check that they agree in
 meaning; a second opinion found two rules that contradicted each other (D-007).
 
 Dates in records are the session's date (UTC). Commit code first, then run it, then commit its

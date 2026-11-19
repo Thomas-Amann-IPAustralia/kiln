@@ -83,7 +83,9 @@ money, and the command refuses to unless a budget Tom set covers it.
 `uv run kiln approvals` lists each decision card and whether Tom's merge has approved it, from
 `origin/main`'s history (fetch it first). `uv run kiln records render` rewrites a card after its
 front matter is edited by hand. `uv run kiln gates --root SOLUTION` walks a solution's gates,
-G0 to G5, from its `council/` folder. All three are free.
+G0 to G5, from its `council/` folder. `uv run kiln scan SCANNER` runs one pinned scanner and
+fails on an open critical, high or unknown finding; CI installs the scanners. `uv run kiln spend`
+shows where each budget stands. All of these are free.
 
 ## Conventions
 
@@ -102,8 +104,11 @@ G0 to G5, from its `council/` folder. All three are free.
 - **One adapter per outside service, with a pinned client.** The base URL comes from config,
   so an ambient variable cannot redirect a call. Keys come from the environment under names
   set in config.
-- **Every paid command** has `--dry-run`, requires `--confirm`, enforces its budget from
-  config before sending, and caches and commits every response with its cost.
+- **Every paid command** has `--dry-run`, requires `--confirm`, reserves its upper-bound cost
+  in the spend ledger (`kiln.spend`) before sending, which refuses a call that could pass its
+  budget, and caches and commits every response with its cost.
+- **A scanner finding is fixed, or dismissed in `config/dismissals.yaml` with a reason.** Never
+  with `# nosemgrep`, a `.trivyignore` or an `osv-scanner.toml`; `kiln scan` refuses those.
 
 ## Security
 

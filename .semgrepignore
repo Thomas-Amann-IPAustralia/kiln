@@ -1,0 +1,7 @@
+# Semgrep reads this file instead of its built-in ignore list (D-013). The built-in list skips
+# tests/ even when a folder under it is named as the target, which would hide the seeded finding
+# CI must see Semgrep detect (tests/seeded-findings/semgrep).
+#
+# Semgrep already scans only the files git tracks. The repo scan leaves out tests/ by flag
+# (config/kiln.yaml, scanners.semgrep.exclude), so the seeded scan can still read its fixture.
+# This file is in CODEOWNERS: a line here hides code from every scan.

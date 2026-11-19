@@ -19,3 +19,6 @@ data/raw/
 data/work/
 
 .DS_Store
+
+# Held while a paid command reads and rewrites the spend ledger (D-013).
+*.jsonl.lock

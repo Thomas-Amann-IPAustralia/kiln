@@ -1,0 +1,98 @@
+{
+  "version": "1.183.0",
+  "results": [
+    {
+      "check_id": "{prefix}.python.lang.security.audit.dangerous-subprocess-use-audit",
+      "path": "tests/seeded-findings/semgrep/seeded.py",
+      "start": {
+        "line": 11,
+        "col": 5,
+        "offset": 283
+      },
+      "end": {
+        "line": 11,
+        "col": 41,
+        "offset": 319
+      },
+      "extra": {
+        "message": "Placeholder message for dangerous-subprocess-use-audit.",
+        "metadata": {
+          "cwe": [
+            "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+          ],
+          "references": [
+            "https://example.invalid/rule-reference"
+          ],
+          "category": "security"
+        },
+        "severity": "ERROR",
+        "fingerprint": "requires login",
+        "lines": "requires login",
+        "engine_kind": "OSS"
+      }
+    },
+    {
+      "check_id": "{prefix}.python.lang.correctness.unchecked-subprocess-call",
+      "path": "tests/seeded-findings/semgrep/seeded.py",
+      "start": {
+        "line": 11,
+        "col": 16,
+        "offset": 294
+      },
+      "end": {
+        "line": 11,
+        "col": 20,
+        "offset": 298
+      },
+      "extra": {
+        "message": "Placeholder message for unchecked-subprocess-call.",
+        "metadata": {
+          "references": [
+            "https://example.invalid/rule-reference"
+          ],
+          "category": "correctness"
+        },
+        "severity": "WARNING",
+        "fingerprint": "requires login",
+        "lines": "requires login",
+        "engine_kind": "OSS"
+      }
+    },
+    {
+      "check_id": "{prefix}.python.lang.security.audit.subprocess-shell-true",
+      "path": "tests/seeded-findings/semgrep/seeded.py",
+      "start": {
+        "line": 11,
+        "col": 36,
+        "offset": 314
+      },
+      "end": {
+        "line": 11,
+        "col": 40,
+        "offset": 318
+      },
+      "extra": {
+        "message": "Placeholder message for subprocess-shell-true.",
+        "metadata": {
+          "cwe": [
+            "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+          ],
+          "references": [
+            "https://example.invalid/rule-reference"
+          ],
+          "category": "security"
+        },
+        "severity": "ERROR",
+        "fingerprint": "requires login",
+        "lines": "requires login",
+        "engine_kind": "OSS"
+      }
+    }
+  ],
+  "errors": [],
+  "paths": {
+    "scanned": [
+      "tests/seeded-findings/semgrep/seeded.py"
+    ]
+  }
+}

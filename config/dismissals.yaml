@@ -1,0 +1,42 @@
+# Scanner findings set aside with a recorded reason (D-013). The Security Architect's charter:
+# agents may fix a finding or dismiss it with a recorded reason, and critical or high findings
+# are fixed or explained before G4.
+#
+# Each entry names one finding's `key`, as `kiln scan` prints it, and must agree with that
+# finding's scanner, rule and path. A key hashes what was matched, so an edit to the code or a
+# new package version makes a new finding, which this list does not cover. `kiln scan` reports
+# an entry that matches nothing as stale.
+#
+# The scanners' own ways to suppress a finding (`# nosemgrep`, `.trivyignore`, `trivy.yaml`,
+# `osv-scanner.toml`) are turned off or refused, so this file is the only one. It is in
+# CODEOWNERS: Tom sees every dismissal when he merges.
+#
+# Fields: key, scanner, rule, path, reason, by, dismissed_on.
+
+dismissals:
+  - key: sha256:9cfa14c75be9b00d57e988eb7d0009d51ea953ad8badf146eb80037d57dfb162
+    scanner: semgrep
+    rule: python.lang.security.audit.dangerous-subprocess-use-audit
+    path: src/kiln/scanners.py
+    reason: >-
+      `run_process` runs a scanner from an argument list that kiln.scanners builds from
+      config/kiln.yaml and fixed strings, with no shell, so nothing outside the control plane
+      shapes the command. The rule flags every subprocess call whose first argument is not a
+      literal list; its own metadata rates its confidence LOW. Rewriting the call to dodge the
+      pattern would hide the same code from the next reader, so it is dismissed here instead.
+    by: build_session
+    dismissed_on: 2026-11-18
+
+  - key: sha256:202700de1dd3cd1a8439f49378a67e1588348f7194acabeb403f615abd028a6d
+    scanner: osv-scanner
+    rule: CVE-2026-59951
+    path: .github/scanners/semgrep-requirements.txt
+    reason: >-
+      mcp 1.29.0 is a dependency of Semgrep, which pins it exactly (`mcp==1.29.0`) in every
+      release up to 1.186.0, so no Semgrep release takes the fixed 1.30.0. The advisory
+      (GHSA-84m7-p3x7-pcfv) is about an MCP Streamable HTTP server keeping sessions forever.
+      Kiln runs only `semgrep scan`, in CI, with metrics off; it never starts Semgrep's MCP
+      server, so the code is not reached. When Semgrep moves to a fixed mcp, this key no
+      longer matches and the dismissal is reported as stale.
+    by: build_session
+    dismissed_on: 2026-11-18
