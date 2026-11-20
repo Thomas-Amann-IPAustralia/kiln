@@ -51,7 +51,10 @@ which checks it requires is unverified.
     runs; runs every check and each ticket's steps, each in its own clean clone, under an
     environment allowlist and a timeout; and writes `council/build.yaml`, which only it writes.
     G3 reads that record and rechecks it against history.
-  - *Checked:* 29 deliberate breaks each failed a test; all six scans pass here.
+  - *Checked:* 29 deliberate breaks each failed a test; all six scans pass here. *On GitHub*
+    (observed): run 19, on commit `0569fd7`, passed all three jobs. The `scanners` job took 5
+    minutes 14 seconds, 4 minutes 14 of them building the Go tools; every repo scan passed, with
+    the new dismissals, and every seeded finding was detected.
   - *Dismissals:* now four. The two new ones are the verifier's step runner, which Semgrep flags
     for running commands that are not literals (that is its job), and CVE-2026-115563, a new high
     advisory against Semgrep's own `mcp` pin in code `semgrep scan` never loads (D-014).
