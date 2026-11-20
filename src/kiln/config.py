@@ -208,6 +208,14 @@ class ScannersConfig(_Strict):
     trivy: TrivyConfig
 
 
+class VerifierConfig(_Strict):
+    """The verifier, the only writer of a ticket's pass (ADR-0027; D-014)."""
+
+    environment: tuple[Annotated[str, Field(pattern=r"^[A-Za-z_][A-Za-z0-9_]*$")], ...]
+    """The only environment variables a check or verification step is given. The commands run
+    a loop's code, so they get no credential."""
+
+
 class KilnConfig(_Strict):
     current_phase: Annotated[int, Field(ge=0, le=5)]
     probe_timeout_seconds: Annotated[float, Field(gt=0, le=60)] = 20.0
@@ -216,6 +224,7 @@ class KilnConfig(_Strict):
     budgets: dict[Name, Budget] = Field(default_factory=dict)
     spend: SpendConfig = SpendConfig()
     scanners: ScannersConfig | None = None
+    verifier: VerifierConfig | None = None
 
     @model_validator(mode="after")
     def _models_name_http_services(self) -> KilnConfig:

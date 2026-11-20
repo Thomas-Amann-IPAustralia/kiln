@@ -44,6 +44,8 @@ class Actor(StrEnum):
     CODING_SWARM = "coding_swarm"
     BUILD_SESSION = "build_session"
     """An agent session building Kiln itself, outside the Council."""
+    VERIFIER = "verifier"
+    """The shared-core component that sets a ticket's pass (ADR-0027). Not an agent."""
 
 
 EXPERTS: frozenset[Actor] = frozenset(

@@ -6,8 +6,10 @@ import os
 import subprocess
 from pathlib import Path
 
+from kiln.git import git_environment
+
 _ENV = {
-    **os.environ,
+    **git_environment(),
     "GIT_CONFIG_GLOBAL": os.devnull,
     "GIT_CONFIG_NOSYSTEM": "1",
     "GIT_AUTHOR_NAME": "Placeholder",
@@ -19,7 +21,8 @@ _ENV = {
 
 class Repo:
     """A repository with a `main` branch and one commit, made with no user or system git
-    config, so a developer's signing or hooks cannot leak into a test."""
+    config, so a developer's signing or hooks cannot leak into a test, and with none of the
+    variables a pre-commit hook sets that would point git at Kiln's own index."""
 
     def __init__(self, root: Path) -> None:
         self.root = root

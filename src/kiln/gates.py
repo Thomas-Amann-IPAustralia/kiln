@@ -32,30 +32,31 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Any, TypedDict, TypeVar
 
-import yaml
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph  # pyright: ignore[reportMissingTypeStubs]
 from langsmith.run_helpers import tracing_context  # pyright: ignore[reportUnknownVariableType]
 from pydantic import BaseModel, Field, ValidationError
 
-from kiln import artefacts
+from kiln import artefacts, verifier
 from kiln.approvals import DEFAULT_REF, CardApproval, Status, read_approvals
 from kiln.artefacts import (
+    COUNCIL_DIR,
     ApplicabilityRegister,
     BuildRecord,
     Plan,
     PreRelease,
     RealWorldTest,
     Severity,
+    parse_yaml,
 )
 from kiln.cards import DecisionCard
 from kiln.errors import KilnError
 from kiln.ids import CardId, ContentHash, content_hash, parse_record_id
 from kiln.model import Record
 from kiln.profile import Dimension, ProjectProfile
+from kiln.tickets import TicketList, parse_tickets
 from kiln.vocabulary import Gate
 
-COUNCIL_DIR = Path("council")
 GATES: tuple[Gate, ...] = tuple(Gate)
 M = TypeVar("M", bound=BaseModel)
 
@@ -125,18 +126,11 @@ class _Reading:
 
     def model(self, name: str, model: type[M]) -> M:
         path = self.workspace.artefact(name)
-        data = self.file(path)
-        try:
-            return model.model_validate(yaml.safe_load(data.decode("utf-8")))
-        except (yaml.YAMLError, UnicodeDecodeError) as exc:
-            raise KilnError(f"not valid YAML: {exc}", item=path) from exc
-        except ValidationError as exc:
-            first = exc.errors()[0]
-            where = ".".join(str(part) for part in first["loc"]) or "(file)"
-            raise KilnError(
-                f"invalid {model.__name__}; first of {exc.error_count()}: {where}: {first['msg']}",
-                item=path,
-            ) from exc
+        return parse_yaml(self.file(path), model, item=path)
+
+    def tickets(self) -> TicketList:
+        path = self.workspace.artefact(artefacts.TICKETS)
+        return parse_tickets(self.file(path), item=path)
 
     def text(self, path: str, what: str) -> list[str]:
         """Require a document to exist (else incomplete) and to say something."""
@@ -193,26 +187,64 @@ def _g2(read: _Reading) -> _Checked:
             problems.append(f"the {name} budget is unknown, so the cost cannot be checked")
         elif estimate > cap:
             problems.append(f"the {name} cost, ${estimate:.2f}, is over its budget, ${cap:.2f}")
+    tickets = read.tickets()
+    contract_ids = {contract.id for contract in plan.contracts}
+    problems += [
+        f"{t.id} traces to {t.contract!r}, which is not a contract in the plan"
+        for t in tickets.tickets
+        if t.contract not in contract_ids
+    ]
     problems += read.text(plan.packet, "the G2 packet")
     contracts = [contract.path for contract in plan.contracts]
     for path in contracts:
         read.file(path)
     ws = read.workspace
-    tom = [ws.artefact(artefacts.PROFILE), ws.artefact(artefacts.PLAN), plan.packet, *contracts]
+    tom = [
+        ws.artefact(artefacts.PROFILE),
+        ws.artefact(artefacts.PLAN),
+        ws.artefact(artefacts.TICKETS),
+        plan.packet,
+        *contracts,
+    ]
     return _Checked(problems, tom)
 
 
 def _g3(read: _Reading) -> _Checked:
-    plan = read.model(artefacts.PLAN, Plan)
+    """Every ticket passes by the verifier's record of the build as it is now (ADR-0027)."""
+    ws = read.workspace
+    tickets = read.tickets()
+    read.model(artefacts.PLAN, Plan)
     build = read.model(artefacts.BUILD, BuildRecord)
-    results = {t.id: t.passes for t in build.tickets}
-    problems = [f"{t.id} has no result" for t in plan.tickets if t.id not in results]
-    problems += [f"{t.id} does not pass" for t in plan.tickets if results.get(t.id) is False]
-    planned = {t.id for t in plan.tickets}
-    problems += [f"{t} is not a ticket in the plan" for t in sorted(results) if t not in planned]
-    if build.engineering_checks != "passed":
-        problems.append("the engineering checks did not pass")
+    problems: list[str] = []
+    for name, recorded in (
+        (artefacts.TICKETS, build.tickets_sha256),
+        (artefacts.PLAN, build.plan_sha256),
+    ):
+        if read.seen[ws.artefact(name)] != recorded:
+            problems.append(
+                f"the verifier judged a {ws.artefact(name)} other than the one here; run it again"
+            )
+    if build.refused:
+        problems.append(
+            f"the verifier refused {build.commit[:12]}: it changes "
+            f"{', '.join(build.refused)}, which a loop may not"
+        )
+    results = {t.id: t for t in build.tickets}
+    problems += [f"{t.id} has no result" for t in tickets.tickets if t.id not in results]
+    if not build.refused:
+        problems += [
+            f"{t.id} does not pass"
+            for t in tickets.tickets
+            if t.id in results and not results[t.id].passes
+        ]
+    listed = {t.id for t in tickets.tickets}
+    problems += [f"{t} is not a ticket in tickets.json" for t in sorted(results) if t not in listed]
+    problems += [f"the check {c.name!r} did not pass" for c in build.checks if not c.passed]
     problems += [f"tripwire {t.number} ({t.value}) is open" for t in build.open_tripwires]
+    problems += [
+        f"{ws.artefact(artefacts.BUILD)} does not hold: {problem}"
+        for problem in verifier.recheck(ws.root, build, ws.ref, ws.council)
+    ]
     return _Checked(problems, [])
 
 

@@ -35,3 +35,4 @@ def test_the_council_is_seven_experts_and_excludes_tom_and_the_swarm() -> None:
     assert Actor.TOM not in EXPERTS
     assert Actor.CODING_SWARM not in EXPERTS
     assert Actor.BUILD_SESSION not in EXPERTS
+    assert Actor.VERIFIER not in EXPERTS

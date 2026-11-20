@@ -1,12 +1,14 @@
 """The gates, G0 to G5, on fixture artefacts in throwaway git repositories.
 
 `walk` takes the public form service sample brief through every gate the way the thin path
-will: work on a branch, a decision card for each of Tom's gates, and Tom's merge.
+will: work on a branch, a decision card for each of Tom's gates, Tom's merge, and at G3 a loop's
+commit that the verifier passes.
 """
 
 from __future__ import annotations
 
 import copy
+import os
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -19,12 +21,23 @@ from pydantic import ValidationError
 from typer.testing import CliRunner
 
 from kiln import gates
+from kiln.artefacts import BuildRecord
 from kiln.cards import DecisionCard, card_text
 from kiln.cli import app
 from kiln.gates import GateMachine, GateOutcome, GateStatus, Workspace, run_gates, validate
 from kiln.ids import content_hash
+from kiln.verifier import verify, write_record
 from kiln.vocabulary import Gate
 from tests.gitrepo import Repo
+from tests.solution import (
+    FITNESS,
+    GREETING,
+    RIGHT,
+    ticket,
+    ticket_list,
+    write_build_contract,
+    write_tickets,
+)
 
 SAMPLE = Path(__file__).resolve().parent.parent / "evals/sample-briefs/public-form-service.yaml"
 EVIDENCE = content_hash(b"placeholder evidence")
@@ -61,7 +74,6 @@ PLAN: dict[str, Any] = {
     "version": 1,
     "consulted_experts": ["solution_architect", "governance_guru", "ux_designer"],
     "contracts": [{"id": "ux", "owner": "ux_designer", "path": "council/contracts/ux.yaml"}],
-    "tickets": [{"id": "TKT-0001", "title": "Placeholder ticket", "contract": "ux"}],
     "review": {
         "reviewer": "placeholder-model",
         "findings": [
@@ -77,13 +89,6 @@ PLAN: dict[str, Any] = {
     },
     "estimate": {"build_usd": 20, "run_usd_per_month": 10},
     "packet": "council/g2-packet.md",
-}
-BUILD: dict[str, Any] = {
-    "version": 1,
-    "commit": "0" * 40,
-    "engineering_checks": "passed",
-    "tickets": [{"id": "TKT-0001", "passes": True}],
-    "open_tripwires": [],
 }
 PRE_RELEASE: dict[str, Any] = {
     "version": 1,
@@ -148,6 +153,15 @@ class Solution(Repo):
     def run(self) -> list[GateOutcome]:
         return run_gates(self.root, ref="main")
 
+    def loop_and_verify(self) -> BuildRecord:
+        """A loop's commit on its own branch, and the verifier's record of it, uncommitted."""
+        self.git("checkout", "--quiet", "-b", "loop")
+        self.write(GREETING, RIGHT)
+        self.commit("the loop greets by name")
+        record = verify(self.root, "HEAD", environment=ENVIRONMENT, ref="main", today=TODAY)
+        write_record(self.root, record)
+        return record
+
     def statuses(self) -> list[tuple[str, str]]:
         return [(o.gate.value, o.status.value) for o in self.run()]
 
@@ -155,9 +169,12 @@ class Solution(Repo):
 G2_FILES = [
     "council/profile.yaml",
     "council/plan.yaml",
+    "council/tickets.json",
     "council/g2-packet.md",
     "council/contracts/ux.yaml",
 ]
+ENVIRONMENT = {"PATH": os.environ.get("PATH", "")}
+TODAY = date(2026, 11, 20)
 G4_FILES = ["council/pre-release.yaml", "council/assurance-case.md", "council/test-plan.md"]
 
 
@@ -176,6 +193,7 @@ def g2_part(repo: Solution) -> None:
     repo.put("profile.yaml", with_all_measures())
     repo.put("applicability.yaml", APPLICABILITY)
     repo.put("plan.yaml", PLAN)
+    write_build_contract(repo, ticket_list())
     repo.write("council/g2-packet.md", "# Placeholder G2 packet\n")
     repo.write("council/contracts/ux.yaml", "placeholder: true\n")
     repo.gate_card(2, Gate.G2, G2_FILES)
@@ -214,9 +232,15 @@ def test_a_sample_brief_walks_g0_to_g5(repo: Solution) -> None:
     ]
 
 
+def through_g3(repo: Solution) -> None:
+    """The loop's branch, with the verifier's record committed on it, merged by Tom."""
+    repo.loop_and_verify()
+    repo.commit("the verifier's record")
+    repo.merge("loop")
+
+
 def through_g5_rest(repo: Solution) -> None:
-    repo.put("build.yaml", BUILD)
-    repo.merged("build")
+    through_g3(repo)
     repo.put("pre-release.yaml", PRE_RELEASE)
     repo.write("council/assurance-case.md", "# Placeholder assurance case\n")
     repo.write("council/test-plan.md", "# Placeholder test plan\n")
@@ -366,6 +390,7 @@ def test_g2_runs_the_charters_hard_checks(repo: Solution) -> None:
     plan["consulted_experts"] = ["solution_architect", "ux_designer"]
     plan["estimate"]["build_usd"] = 26
     repo.put("plan.yaml", plan)
+    write_tickets(repo, ticket_list(tickets=[ticket(1) | {"contract": "elsewhere"}]))
     repo.write("council/g2-packet.md", "  \n")
     repo.write("council/contracts/ux.yaml", "placeholder: true\n")
     assert failing(repo, Gate.G2) == [
@@ -373,22 +398,87 @@ def test_g2_runs_the_charters_hard_checks(repo: Solution) -> None:
         "H2 has no measure",
         "the build cost, $26.00, is over its budget, $25.00",
         "the monthly running budget is unknown, so the cost cannot be checked",
+        "TKT-0001 traces to 'elsewhere', which is not a contract in the plan",
         "the G2 packet (council/g2-packet.md) is empty",
     ]
 
 
-def test_g3_needs_every_ticket_passing_and_no_tripwire_open(repo: Solution) -> None:
-    """Why: G3's checks; slice 4 makes the verifier the only writer of these results."""
-    repo.put("plan.yaml", PLAN)
-    build = copy.deepcopy(BUILD)
-    build["tickets"] = [{"id": "TKT-0001", "passes": False}, {"id": "TKT-0009", "passes": True}]
-    build["open_tripwires"] = ["exposed_secret"]
-    repo.put("build.yaml", build)
+def test_toms_g2_approval_covers_the_verification_steps(repo: Solution) -> None:
+    """Why: the steps decide what "done" means for a loop; they are part of the plan Tom
+    approves, and an edit to them goes back to him."""
+    through_g2(repo)
+    write_tickets(repo, ticket_list(tickets=[ticket(1), ticket(2)]))
+    run = repo.run()
+    assert run[2].status is GateStatus.FAILED
+    assert "changed since Tom approved it: council/tickets.json" in run[2].problems[0]
+
+
+def test_g3_passes_on_the_verifiers_record_and_only_for_the_build_it_verified(
+    repo: Solution,
+) -> None:
+    """Why: G3's check is "every ticket passes", and since slice 4 only the verifier's record
+    can say so (ADR-0027). A pass is for one commit: code changed after it was never verified."""
+    through_g2(repo)
+    assert [o.status for o in repo.run()][3] is GateStatus.INCOMPLETE
+    through_g3(repo)
+    assert repo.run()[3].status is GateStatus.PASSED
+    repo.write(GREETING, RIGHT + "# changed after the verifier ran\n")
+    problems = failing(repo, Gate.G3)
+    assert len(problems) == 1
+    assert problems[0].startswith(
+        "council/build.yaml does not hold: src/greeting.py changed after the verifier ran"
+    )
+
+
+def test_g3_reports_every_failure_in_the_record(repo: Solution) -> None:
+    """Why: G3's checks, from the verifier's results: a ticket that does not pass, a result for
+    a ticket that is not in the list, a failed check, and an open tripwire."""
+    through_g2(repo)
+    record = repo.loop_and_verify().model_dump(mode="json")
+    record["checks"].append(
+        {
+            "name": "secrets",
+            "run": ["placeholder-secret-scan"],
+            "exit_code": 1,
+            "output": "placeholder",
+            "tripwire": "exposed_secret",
+        }
+    )
+    record["tickets"][0]["passes"] = False
+    record["tickets"].append({"id": "TKT-0009", "passes": False, "steps": []})
+    write_record(repo.root, BuildRecord.model_validate(record))
     assert failing(repo, Gate.G3) == [
         "TKT-0001 does not pass",
-        "TKT-0009 is not a ticket in the plan",
+        "TKT-0009 is not a ticket in tickets.json",
+        "the check 'secrets' did not pass",
         "tripwire 2 (exposed_secret) is open",
     ]
+
+
+def test_g3_fails_on_a_refused_commit(repo: Solution) -> None:
+    """Why: a loop that changed what judges it has not built the ticket, whatever ran."""
+    through_g2(repo)
+    repo.git("checkout", "--quiet", "-b", "loop")
+    repo.write(FITNESS, "placeholder = 'checks nothing'\n")
+    repo.commit("the loop weakens the check")
+    record = verify(repo.root, "HEAD", environment=ENVIRONMENT, ref="main", today=TODAY)
+    write_record(repo.root, record)
+    assert failing(repo, Gate.G3) == [
+        f"the verifier refused {record.commit[:12]}: it changes {FITNESS}, which a loop may not"
+    ]
+
+
+def test_g3_fails_a_record_judged_against_another_ticket_list(repo: Solution) -> None:
+    """Why: the record names the ticket list it ran; a list changed since may hold steps that
+    never ran."""
+    through_g2(repo)
+    repo.loop_and_verify()
+    write_tickets(repo, ticket_list(tickets=[ticket(1), ticket(2)]))
+    problems = failing(repo, Gate.G3)
+    assert problems[0] == (
+        "the verifier judged a council/tickets.json other than the one here; run it again"
+    )
+    assert "TKT-0002 has no result" in problems
 
 
 def test_g4_needs_serious_findings_closed_and_every_obligation_settled(repo: Solution) -> None:

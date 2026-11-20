@@ -23,7 +23,6 @@ merges it.
 
 from __future__ import annotations
 
-import subprocess
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from enum import StrEnum
@@ -31,6 +30,7 @@ from pathlib import Path
 
 from kiln.cards import CARDS_DIR, DecisionCard, parse_card
 from kiln.errors import KilnError
+from kiln.git import Git
 from kiln.ids import content_hash
 
 DEFAULT_REF = "origin/main"
@@ -81,62 +81,18 @@ class CardApproval:
         return self.status in (Status.LAPSED, Status.INVALID) or bool(self.warnings)
 
 
-class _Git:
-    """Read-only access to one repository. Every failure is a `KilnError`."""
-
-    def __init__(self, root: Path) -> None:
-        self.root = root
-        self._blobs: dict[str, bytes] = {}
-
-    def run(self, *args: str) -> bytes:
-        try:
-            done = subprocess.run(  # noqa: S603 -- fixed git subcommands, no shell
-                ["git", "-C", str(self.root), *args],  # noqa: S607 -- git from PATH, like CI
-                capture_output=True,
-                check=False,
-            )
-        except FileNotFoundError as exc:
-            raise KilnError("git is not installed", item="git") from exc
-        if done.returncode != 0:
-            message = done.stderr.decode("utf-8", "replace").strip().splitlines()
-            raise KilnError(
-                f"git {args[0]} failed: {message[-1] if message else done.returncode}",
-                item=" ".join(args),
-            )
-        return done.stdout
-
-    def first_parent_commits(self, ref: str) -> list[Commit]:
-        try:
-            self.run("rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}")
-        except KilnError as exc:
-            raise KilnError(
-                "the ref to read approvals from does not exist here",
-                item=ref,
-                see="`git fetch origin main`, or pass --ref",
-            ) from exc
-        out = self.run("log", "--first-parent", "--reverse", "--format=%H %ct", ref, "--")
-        commits: list[Commit] = []
-        for line in out.decode().splitlines():
-            sha, stamp = line.split()
-            commits.append(Commit(sha, datetime.fromtimestamp(int(stamp), UTC).date()))
-        return commits
-
-    def tree(self, commit: str) -> dict[str, str]:
-        """Every file at `commit`, path to blob id."""
-        entries: dict[str, str] = {}
-        for entry in self.run("ls-tree", "-r", "-z", commit).split(b"\0"):
-            if not entry:
-                continue
-            meta, path = entry.split(b"\t", 1)
-            _mode, kind, blob = meta.decode().split()
-            if kind == "blob":
-                entries[path.decode("utf-8")] = blob
-        return entries
-
-    def blob(self, blob: str) -> bytes:
-        if blob not in self._blobs:
-            self._blobs[blob] = self.run("cat-file", "blob", blob)
-        return self._blobs[blob]
+def _first_parent_commits(git: Git, ref: str) -> list[Commit]:
+    git.commit(
+        ref,
+        cause="the ref to read approvals from does not exist here",
+        see="`git fetch origin main`, or pass --ref",
+    )
+    out = git.run("log", "--first-parent", "--reverse", "--format=%H %ct", ref, "--")
+    commits: list[Commit] = []
+    for line in out.decode().splitlines():
+        sha, stamp = line.split()
+        commits.append(Commit(sha, datetime.fromtimestamp(int(stamp), UTC).date()))
+    return commits
 
 
 @dataclass
@@ -151,10 +107,10 @@ def read_approvals(
     root: Path, ref: str = DEFAULT_REF, cards_dir: Path = CARDS_DIR
 ) -> list[CardApproval]:
     """Every card on `ref` or in the working tree, with what the history says about it."""
-    git = _Git(root)
+    git = Git(root)
     prefix = cards_dir.as_posix().rstrip("/") + "/"
     tracked: dict[str, _Tracked] = {}
-    for commit in git.first_parent_commits(ref):
+    for commit in _first_parent_commits(git, ref):
         tree = git.tree(commit.sha)
         for path in sorted(p for p in tree if p.startswith(prefix) and p.endswith(".md")):
             tracked.setdefault(path, _Tracked(CardApproval(path)))
@@ -189,7 +145,7 @@ _SETTLED = frozenset({Status.APPROVED, Status.LAPSED, Status.SUPERSEDED})
 """States a later version of the card cannot change: only a superseding card ends them."""
 
 
-def _read_version(git: _Git, state: _Tracked, tree: dict[str, str], commit: Commit) -> None:
+def _read_version(git: Git, state: _Tracked, tree: dict[str, str], commit: Commit) -> None:
     result = state.result
     state.blob = tree.get(result.path)
     if state.blob is None:
