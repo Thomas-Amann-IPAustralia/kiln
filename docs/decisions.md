@@ -795,3 +795,127 @@ lock needs POSIX (Linux, macOS).
 
 **Consequences.** Slice 5's sandbox reserves each run's cap in this ledger. Slice 4 (tickets and
 the verifier) is independent of this slice and can be next.
+
+## D-014 — Slice 4 built: tickets, and the verifier as the only writer of a ticket's pass (2026-11-20)
+
+**Context.** Tom asked for slice 4 of the approved sketch (D-010): "The ticket schema, and the
+verifier: it runs a ticket's verification steps and every check on a clean checkout of the
+loop's commit, and writes the pass." It is checked by two things: a commit that passes its steps
+gets the pass, and one that edits a fitness function, a contract or its own verification steps is
+refused, whatever its tests say. ADR-0027 is the rule it builds.
+
+**Found at source first.**
+
+- **The ticket shape the charter cites** (observed, the aihero.dev page `coding-swarm.md` links):
+  each item has `category`, `description`, `steps` and `passes`. Its steps are sentences for a
+  person or an agent ("Click the 'New Chat' button"), and "Ralph marks `passes` to `true` when
+  complete": the loop sets its own flag, which ADR-0027 forbids.
+- **A new high advisory against Semgrep's own `mcp` pin,** CVE-2026-115563. Its CVE record dates
+  from 2026-11-16; the GitHub advisory that names the affected versions, GHSA-qx49-fqc8-xw99, from
+  2026-11-19, the day after D-013's last green run (observed, OSV.dev). It concerns the SDK's OAuth
+  client, `mcp.client.auth`; the fix is `mcp` 1.30.0. Semgrep 1.186.0, uploaded 2026-11-18, still
+  pins `mcp==1.29.0` (observed, PyPI), and is inside D-012's two-week window anyway. So `main`'s
+  `scanners` job fails on its next run until this branch's dismissal is merged; nothing in this
+  slice caused it.
+- **`semgrep scan` imports `mcp`** (observed with `python -X importtime`): 89 of its modules,
+  because Semgrep's command line loads every subcommand at startup. `mcp.client.auth` is not
+  among them. D-013's dismissal said the vulnerable code "is not reached", which holds; it would
+  have been wrong to say it is not imported.
+
+**Decision (Claude; engineering inside the approved slice).**
+
+1. **Tickets live in `council/tickets.json`,** the file the charter names (`kiln.tickets`). The
+   chair writes it; G2 now requires every ticket to trace to a contract in the plan, and Tom's
+   G2 card rests on it, so the verification steps are part of what he approves. `plan.yaml` no
+   longer lists the tickets, so they are in one place. A ticket has an id, a title, a
+   description, its contract, the tickets that block it (no cycles) and its steps; the list's
+   order is its priority. The same file holds the **checks** every commit must pass, of which a
+   **tripwire check** names the tripwire it watches, and `read_only`, more paths a loop may not
+   change. It departs from Pocock's shape three ways: no `category`, which nothing reads; each
+   step is a command, an argument list run with no shell, with a timeout and a description,
+   because a verifier that is not a model must run it; and no `passes`.
+2. **A ticket's pass lives in `council/build.yaml`, which only the verifier writes.** Were it in
+   `tickets.json`, every pass would change the file Tom approved at G2 and lapse his card, and
+   the chair's file and the verifier's results would share one file a loop must not touch. The
+   charter's layout line still says "tickets.json: tickets with passes flags"; that wording is for
+   Tom under "These can wait", since the charter moves only on his word.
+3. **The build contract is read at the branch's base, never from the commit.** The base is the
+   commit's merge base with `origin/main`: there must be exactly one, and it must be on main's
+   first-parent history, a state Tom merged. A branch started inside a merged feature branch is
+   refused, because that state may hold a ticket list Tom never saw as a whole.
+4. **What is read-only to a loop** is stricter than ADR-0027's list: the whole `council/` folder
+   (tickets and steps, contracts, fitness functions, and also the plan, the cards and the
+   verifier's own record), every contract the plan names wherever it lives, and every
+   `read_only` path or pattern. Compared without regard to case, so `COUNCIL/` cannot stand in for
+   `council/` on a file system that folds case. A commit that changes one is **refused before any
+   of its code runs**. The comparison is of the commit's files with the base's, so an edit the
+   loop undoes is not a change. The wider set makes no new rule: each thing in `council/` is
+   already closed to a loop, by ADR-0027 (contracts, fitness functions, steps and the pass),
+   ADR-0028 (cards) or the Tom band (the plan and profile he approved). So it is enforced here
+   and not added to `AGENTS.md`; if a later expert gives loops a folder of their own there, such
+   as typed questions, it is opened deliberately.
+5. **Each command runs in its own fresh clone of the commit** (`git clone --shared`, hooks off).
+   That is the clean checkout: an uncommitted fix or untracked file in the working tree cannot
+   make a commit pass. And a check runs the loop's code, which could otherwise rewrite a fitness
+   function in its checkout before the step runs it; a test shows it cannot.
+6. **How a command runs.** With only the variables `config/kiln.yaml` allows (`verifier.environment`,
+   no credentials), no input, in its own process group, all of which is stopped when it ends or
+   passes its timeout. A command that cannot start or runs out of time fails its step and says
+   why; it does not stop the verifier. A failed command keeps its last 20 lines of output, with the
+   checkout's path made relative.
+7. **A ticket passes when every check and every one of its steps exits 0.** A failed tripwire check
+   opens its tripwire, which G3 reports: "no tripwire is open" now comes from the verifier, not a
+   hand-written list.
+8. **The record says what the pass was judged against:** the commit, its base, the hashes of the
+   ticket list and plan at the base, any refusal, and every result, with the verifier as its
+   writer (a new actor) and the date. A record whose pass does not follow from its results will not
+   load. **G3 recomputes from history everything in it except the commands' results:** the base is
+   on main's first-parent history and below the commit; the hashes are the base's; the refusals are
+   what history gives; and every file the result depends on is as it was in the commit, which is
+   everything outside `council/`, plus the build contract inside it. Cards and later gates'
+   artefacts may be added after a build is verified. Code changed since, committed or not, fails G3.
+9. **`kiln verify COMMIT --runner local`.** The runner has no default: `local` is this machine, not
+   a sandbox, so whoever runs the verifier names that choice (ADR-0007). It writes the record
+   whatever the result, and exits 2 on a refusal or a ticket that does not pass.
+10. **One git reader,** `kiln.git`, promoted from `kiln.approvals`' private one. It drops the
+    variables that point git elsewhere (`GIT_DIR`, `GIT_INDEX_FILE` and five more): a pre-commit
+    hook exports `GIT_INDEX_FILE`, and a working-tree comparison would have read Kiln's own index.
+    The tests' git helper does the same.
+11. **Two dismissals** in `config/dismissals.yaml`, each with its evidence. The step runner's
+    `subprocess.Popen`, which Semgrep flags `high` because its argument list is not a literal:
+    running a solution's commands is the verifier's job, the list comes from the base and never the
+    loop, and there is no shell. And CVE-2026-115563 above, on the evidence above.
+
+**Checked.** `make check` passes: 343 tests (273 before), none touching the network; the verifier's
+tests build real repositories with real merges and run real commands. With the pinned binaries in
+this session, all six scans pass (Semgrep and OSV-Scanner with two dismissals each), and each seeded
+finding is still detected. Each of 29 deliberate breaks made at least one test fail; one, a recheck
+that ignored untracked files, did so only after a test was added for it. I read `kiln verify`'s
+output and record by hand on a throwaway synthetic solution: a passing commit, and one that weakened
+its fitness function, refused with exit 2. **Not checked:** a real solution, which slice 6 brings; a
+file system that folds case (the comparison is tested, not the file system); and the CI run, which
+the handover records.
+
+**Limits, stated plainly.**
+
+- **It runs the commit's code on the machine it runs on** until slice 5's sandbox. Only the
+  environment allowlist stands between that code and the machine's files and network.
+- **A step is only as strong as what it runs.** A step that runs a test the loop may edit can be
+  passed by editing the test: steps should run files under `council/fitness/` or in `read_only`.
+  Code written to detect that it is under test is not caught; that is for Tom's team and the human
+  experts.
+- **A record can be forged by anyone who can write the repository,** as an approval can
+  (ADR-0028). The recheck catches a record that disagrees with history, not one invented with care.
+  For Tom, with the approvals question it joins.
+- **Submodules are not checked out,** and each command builds its own environment afresh (a
+  `uv run` in a fresh clone makes its own virtual environment), which is slower than one shared
+  checkout and is the price of item 5.
+- **The record must stay off the loop's branch while the loop works on it.** Committed there, it
+  would make the loop's next commit differ from the base in `council/`, and be refused. Slice 6's
+  runner keeps it apart.
+
+**Spend:** $0. The PyPI and OSV.dev lookups are free.
+
+**Consequences.** Slice 5's sandbox becomes a second runner beside `local`, behind the same
+`CommandRunner` interface. Slice 6 runs the verifier in a clone of its own and commits the record
+when the loop is done. Handover open item 8 closes: G3 no longer trusts a hand-written build record.

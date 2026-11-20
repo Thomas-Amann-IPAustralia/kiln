@@ -9,12 +9,12 @@ Tom's team a test-ready build; nothing reaches production before a real-world te
 experts. Tom is the owner and is not a subject-matter expert: the work must stand up to an
 expert's scrutiny without one in the room.
 
-**Current scope: phase 0 of 6 (the shared core). Slices 1 to 3 of 9 are built.**
+**Current scope: phase 0 of 6 (the shared core). Slices 1 to 4 of 9 are built.**
 The repo holds the rulebook, the records, the live charter, CI, the record formats and decision
 cards (slice 1), the gates G0 to G5 (slice 2), the scanner baseline and the spend ledger
-(slice 3), the free commands (`kiln doctor`, `kiln records check` and `render`, `kiln
-approvals`, `kiln gates`, `kiln scan`, `kiln spend`) and one paid one (`kiln review`, a second
-opinion from another provider's model). Tom approved the phase 0 sketch,
+(slice 3), tickets and the verifier (slice 4), the free commands (`kiln doctor`, `kiln records
+check` and `render`, `kiln approvals`, `kiln gates`, `kiln scan`, `kiln spend`, `kiln verify`)
+and one paid one (`kiln review`, a second opinion from another provider's model). Tom approved the phase 0 sketch,
 [`docs/sketches/phase-0-shared-core.md`](docs/sketches/phase-0-shared-core.md), on 2026-11-18
 (D-010); build its slices in order, and treat the sketch as approved and frozen. The only budget is
 Tom's $2 for a second opinion on the docs ($0.38 spent, D-007); **no other paid call is

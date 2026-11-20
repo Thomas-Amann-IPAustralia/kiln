@@ -126,6 +126,13 @@ A rule or test that enforces a decision on every commit.
 One unit of work for a coding loop, with verification steps and a flag that says whether it passes.
 _Avoid_: issue, task (for swarm work)
 
+**Verification step**:
+A command that succeeds when a ticket's behaviour is there. The chair writes it, Tom approves it with the plan, and a loop cannot change it.
+
+**Verifier**:
+The part of the shared core that sets a ticket's pass. It runs the ticket's verification steps and every check on a clean copy of a loop's commit, and refuses a commit that changes what judges it.
+_Avoid_: judge (a judge is a model that grades output)
+
 **Typed question**:
 The only way a coding loop reaches an expert: a structured question whose answer updates the contract.
 
