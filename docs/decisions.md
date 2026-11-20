@@ -874,6 +874,8 @@ refused, whatever its tests say. ADR-0027 is the rule it builds.
    what history gives; and every file the result depends on is as it was in the commit, which is
    everything outside `council/`, plus the build contract inside it. Cards and later gates'
    artefacts may be added after a build is verified. Code changed since, committed or not, fails G3.
+   The verifier and the recheck both run only from the top of the repository, where git's paths
+   begin; from a subfolder they would not line up with the council folder's.
 9. **`kiln verify COMMIT --runner local`.** The runner has no default: `local` is this machine, not
    a sandbox, so whoever runs the verifier names that choice (ADR-0007). It writes the record
    whatever the result, and exits 2 on a refusal or a ticket that does not pass.
@@ -886,7 +888,7 @@ refused, whatever its tests say. ADR-0027 is the rule it builds.
     running a solution's commands is the verifier's job, the list comes from the base and never the
     loop, and there is no shell. And CVE-2026-115563 above, on the evidence above.
 
-**Checked.** `make check` passes: 343 tests (273 before), none touching the network; the verifier's
+**Checked.** `make check` passes: 344 tests (273 before), none touching the network; the verifier's
 tests build real repositories with real merges and run real commands. With the pinned binaries in
 this session, all six scans pass (Semgrep and OSV-Scanner with two dismissals each), and each seeded
 finding is still detected. Each of 29 deliberate breaks made at least one test fail; one, a recheck

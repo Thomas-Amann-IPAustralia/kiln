@@ -455,6 +455,15 @@ def test_a_record_that_misnames_what_it_judged_does_not_hold(
     assert len(problems) == 1 and problem in problems[0]
 
 
+def test_a_record_is_rechecked_only_from_the_top_of_the_repository(repo: Solution) -> None:
+    """Why: from a subfolder, git's paths and the council folder's would not line up, and a
+    change could be missed; G3 run from the wrong place must fail, not pass."""
+    problems = recheck(repo.root / "src", passing(repo), "main")
+    assert problems == [
+        "it can be rechecked only from the top of the repository, where git's paths begin"
+    ]
+
+
 def test_a_record_whose_base_tom_never_merged_does_not_hold(repo: Solution) -> None:
     """Why: the base is where the build contract was read; it must be a state on `main`."""
     record = passing(repo)

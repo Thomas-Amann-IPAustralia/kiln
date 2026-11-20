@@ -22,7 +22,7 @@ which checks it requires is unverified.
 - **The seeds** are sealed in `docs/repo-seeds/` with a hash manifest.
 - **Code:** `src/kiln/` has the config loader, `kiln doctor`, `kiln records check` and
   `render`, `kiln review`, `kiln approvals`, `kiln gates`, `kiln scan`, `kiln spend` and
-  `kiln verify`, with their tests (343). CI runs lint, format, pyright, tests, the records check,
+  `kiln verify`, with their tests (344). CI runs lint, format, pyright, tests, the records check,
   gitleaks and the three scanners, on `main`, `claude/**` and `ccr-**` branches and on pull
   requests.
 - **Slice 1 (D-011):** the enums (`kiln.vocabulary`), the id formats (`kiln.ids`), the

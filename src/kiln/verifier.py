@@ -375,6 +375,10 @@ def recheck(root: Path, record: BuildRecord, ref: str, council: Path = COUNCIL_D
     commit. A record that passes all of this can still hold forged results (module docstring)."""
     git = Git(root)
     try:
+        if not git.is_top_level():
+            return [
+                "it can be rechecked only from the top of the repository, where git's paths begin"
+            ]
         for sha in (record.base, record.commit):
             git.commit(sha, cause="the record names a commit that is not here")
         tip = git.commit(ref, cause="the branch Tom merges into is not here")
