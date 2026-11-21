@@ -156,11 +156,16 @@ disagree.
 
 **For the next step.**
 
-1. **Slice 5 or slice 9 next?** Slice 5 is the sandbox the verifier and the loop run in. It needs
-   `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET`, added in the environment's settings, never in chat,
-   and a budget for its test runs. *Recommended: slice 5, with a $1 cap* (expected spend: cents,
-   an estimate to check against Modal's own price page before any run). Slice 9, the eval sets,
-   needs neither, and can come first if you would rather not set up Modal yet. (D-004, D-014)
+1. **Slice 5 or slice 9 next?** Slice 5 is the sandbox the verifier and the loop run in. It runs
+   on Modal (modal.com), the cloud service the charter chose for running agent-written code
+   (ADR-0007). It needs a Modal account and one API token from it, which comes as two values, a
+   token ID and a token secret (`MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`; authoritative, Modal's
+   docs). They are saved in the environment's settings or a secure form, never in chat. It also
+   needs a Kiln budget for its test runs. *Recommended: slice 5, with a $1 cap.* Modal's free plan
+   includes $30 of use a month, and lists CPU at about $0.00004 per core-second, roughly 14 cents
+   an hour (observed, modal.com/pricing, 2026-11-21); the exact sandbox rate is rechecked before
+   any run. Slice 9, the eval sets, needs neither, and can come first if you would rather not set
+   up Modal yet. (D-004, D-014)
 
 **Due now, blocking nothing in phase 0.**
 
