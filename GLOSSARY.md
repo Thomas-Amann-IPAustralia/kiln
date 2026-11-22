@@ -212,6 +212,14 @@ _Avoid_: MVP, v1
 **First slice**:
 The first end-to-end task an agent is built to do, which also becomes its first evaluation set.
 
+**Golden question**:
+A question put to an agent with its key fixed in advance: the reference answer, the points a complete answer covers, and the sources it should cite, each checked at the source. A set of them and its pass rule are approved by Tom before any run.
+_Avoid_: benchmark question, test case (a test is code)
+
+**Single-session baseline**:
+One plain Claude Code session given the same briefs and rulebook as the Council. The Council's path must beat it, by a rule committed before either runs, before the Council grows (ADR-0029).
+_Avoid_: control, ablation
+
 **Deterministic first**:
 If a rule, lookup or test can answer a question, the model does not.
 

@@ -9,14 +9,16 @@ Tom's team a test-ready build; nothing reaches production before a real-world te
 experts. Tom is the owner and is not a subject-matter expert: the work must stand up to an
 expert's scrutiny without one in the room.
 
-**Current scope: phase 0 of 6 (the shared core). Slices 1 to 3 of 9 are built.**
+**Current scope: phase 0 of 6 (the shared core). Slices 1, 2, 3 and 9 of 9 are built.**
 The repo holds the rulebook, the records, the live charter, CI, the record formats and decision
 cards (slice 1), the gates G0 to G5 (slice 2), the scanner baseline and the spend ledger
-(slice 3), the free commands (`kiln doctor`, `kiln records check` and `render`, `kiln
+(slice 3), the Researcher's golden questions and the baseline comparison's protocol, drafts for
+Tom's approval (slice 9), the free commands (`kiln doctor`, `kiln records check` and `render`, `kiln
 approvals`, `kiln gates`, `kiln scan`, `kiln spend`) and one paid one (`kiln review`, a second
 opinion from another provider's model). Tom approved the phase 0 sketch,
 [`docs/sketches/phase-0-shared-core.md`](docs/sketches/phase-0-shared-core.md), on 2026-11-18
-(D-010); build its slices in order, and treat the sketch as approved and frozen. The only budget is
+(D-010); build its slices in the order its graph allows (Tom chose slice 9 before 4, D-014), and
+treat the sketch as approved and frozen. The only budget is
 Tom's $2 for a second opinion on the docs ($0.38 spent, D-007); **no other paid call is
 approved**.
 
@@ -133,6 +135,7 @@ measured and adopted (D-005, F2).
 | Glossary | [`GLOSSARY.md`](GLOSSARY.md) | The one vocabulary. No implementation detail. |
 | Friction log | [`docs/friction-log.md`](docs/friction-log.md) | One line each time Tom and Kiln miss each other. |
 | Decision cards | `docs/cards/`, `CARD-NNNN` | Each decision put to Tom, with his answer once given. Never edited after approval: superseded by a new card. |
+| Eval sets | `evals/golden-questions/`, `evals/baseline/` | Drafted with their pass rule before any run, each key checked at its source. Tom approves one by card, at its hash; a change after that is a new version and a new card. |
 | Sketches | `docs/sketches/` | A design proposed for Tom's approval before a major component is built. Frozen once approved. |
 | Reviews | `docs/reviews/` | Second opinions: the spec, the answer and the cached response with its cost. |
 | Spend ledger | [`docs/spend/ledger.jsonl`](docs/spend/ledger.jsonl) | Every paid call, reserved at its bound and settled at its cost. Append-only; written only through `kiln.spend`. |

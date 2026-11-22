@@ -6,8 +6,10 @@ they all use. The Council hands over a test-ready build; nothing reaches product
 real-world test and human experts.
 
 **Status: phase 0 of 6.** The foundation is in place: the rulebook, the records, the live
-charter and CI. Three of the shared core's nine slices are built: the records and the decision
-card; the gates; and the scanner baseline with the spend ledger. No agent is built yet.
+charter and CI. Four of the shared core's nine slices are built: the records and the decision
+card; the gates; the scanner baseline with the spend ledger; and the first evaluation sets, the
+Researcher's golden questions and the baseline comparison, drafts for Tom's approval. No agent
+is built yet.
 
 ## Where to start
 
