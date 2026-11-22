@@ -40,3 +40,36 @@ dismissals:
       longer matches and the dismissal is reported as stale.
     by: build_session
     dismissed_on: 2026-11-18
+
+  - key: sha256:6de7d03c281c75d6d010aa6e70552af87cb989e4c4a2393a6c97ca4e1ffc3add
+    scanner: semgrep
+    rule: python.lang.security.audit.dangerous-subprocess-use-audit
+    path: src/kiln/verifier.py
+    reason: >-
+      `run_command` runs a solution's checks and verification steps, which is the verifier's
+      whole job (ADR-0027). Each command is an argument list from council/tickets.json as it
+      stands at the branch's base, a commit on main's first-parent history that Tom merged; a
+      commit that changes that file is refused before anything runs. There is no shell, so no
+      argument can become a second command. What the commands run is a loop's code, which
+      ADR-0007 puts in a sandbox: slice 5 builds it, and until then `kiln verify --runner local`
+      is for code no agent wrote (D-014). The rule flags every subprocess call whose argument is
+      not a literal list; rewriting the call to dodge the pattern would hide the same code from
+      the next reader, so it is dismissed here instead.
+    by: build_session
+    dismissed_on: 2026-11-20
+
+  - key: sha256:2805ca52fc66b5f10c6d1e81a5bfd72636b7af0076d2f647d7bee99904418534
+    scanner: osv-scanner
+    rule: CVE-2026-115563
+    path: .github/scanners/semgrep-requirements.txt
+    reason: >-
+      The same mcp 1.29.0 that Semgrep pins exactly in every release up to 1.186.0; the fix is
+      1.30.0. The advisory (GHSA-qx49-fqc8-xw99, published 2026-11-19) concerns the SDK's OAuth
+      client, `mcp.client.auth`, which could send a client's credentials wherever a malicious MCP
+      server chose. Kiln runs only `semgrep scan`, which never connects to an MCP server. It
+      imports 89 of mcp's modules, because Semgrep's command line loads every subcommand at
+      startup, and `mcp.client.auth` is not among them (observed with `python -X importtime`,
+      D-014). When Semgrep moves to a fixed mcp, this key no longer matches and the dismissal is
+      reported as stale.
+    by: build_session
+    dismissed_on: 2026-11-20

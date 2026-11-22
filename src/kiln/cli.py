@@ -19,6 +19,8 @@ from kiln import records as records_module
 from kiln import review as review_module
 from kiln import scanners as scanners_module
 from kiln import spend as spend_module
+from kiln import verifier as verifier_module
+from kiln.artefacts import COUNCIL_DIR, Runner
 from kiln.config import DEFAULT_CONFIG_PATH, load_config
 from kiln.errors import EXIT_FAILURE, KilnError
 from kiln.vocabulary import Actor, Basis
@@ -154,9 +156,7 @@ def approvals(
 
 @app.command()
 def gates(
-    council: Annotated[
-        Path, typer.Option(help="The solution's council folder.")
-    ] = gates_module.COUNCIL_DIR,
+    council: Annotated[Path, typer.Option(help="The solution's council folder.")] = COUNCIL_DIR,
     ref: Annotated[
         str, typer.Option(help="The branch Tom merges into. Fetch it first.")
     ] = approvals_module.DEFAULT_REF,
@@ -172,6 +172,60 @@ def gates(
     failed = [o.gate.value for o in outcomes if o.status is gates_module.GateStatus.FAILED]
     if failed:
         raise _fail(f"{', '.join(failed)} failed | see: src/kiln/gates.py")
+
+
+@app.command()
+def verify(
+    commit: Annotated[str, typer.Argument(help="The loop's commit.")],
+    runner: Annotated[
+        Runner,
+        typer.Option(
+            help="Where the commit's code runs. `local` is this machine, not a sandbox: use it "
+            "only on code no agent wrote, or from inside a sandbox (ADR-0007).",
+        ),
+    ],
+    ticket: Annotated[
+        list[str] | None,
+        typer.Option("--ticket", help="Run only this ticket's steps; repeat for more."),
+    ] = None,
+    ref: Annotated[
+        str, typer.Option(help="The branch Tom merges into. Fetch it first.")
+    ] = approvals_module.DEFAULT_REF,
+    council: Annotated[Path, typer.Option(help="The solution's council folder.")] = COUNCIL_DIR,
+    root: Annotated[Path, typer.Option(help="The solution's repo root.")] = Path(),
+    config_path: Annotated[
+        Path, typer.Option("--config", help="Config file.")
+    ] = DEFAULT_CONFIG_PATH,
+) -> None:
+    """Verify a loop's commit and write each ticket's pass to council/build.yaml (ADR-0027).
+    Runs the commit's code. Exits 2 if the commit is refused or a ticket does not pass. Free."""
+    try:
+        config = load_config(config_path)
+        if config.verifier is None:
+            raise KilnError("config has no `verifier` section", see="config/kiln.yaml")
+        environment = verifier_module.environment_for(config.verifier.environment, os.environ)
+        record = verifier_module.verify(
+            root,
+            commit,
+            environment=environment,
+            ref=ref,
+            council=council,
+            ticket_ids=ticket or [],
+            runner=runner,
+        )
+        path = verifier_module.write_record(root, record, council)
+    except KilnError as exc:
+        raise _fail(exc.one_line()) from exc
+    typer.echo(verifier_module.render(record))
+    typer.echo(f"Wrote {path}.")
+    if record.refused:
+        raise _fail(
+            f"refused {record.commit[:12]}: it changes what judges it, so none of its code ran | "
+            "see: docs/adr/0027-an-independent-verifier-sets-a-pass.md"
+        )
+    failing = [t.id for t in record.tickets if not t.passes]
+    if failing:
+        raise _fail(f"{', '.join(failing)} did not pass at {record.commit[:12]} | see: {path}")
 
 
 @app.command()

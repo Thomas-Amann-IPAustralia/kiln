@@ -163,3 +163,14 @@ scanners:
     seeded:
       target: tests/seeded-findings/trivy
       rule: DS-0002
+
+# The verifier (D-014): the only writer of a ticket's pass (ADR-0027). It runs a solution's checks
+# and verification steps, from its council/tickets.json, each on its own clean checkout of a
+# loop's commit, with only these environment variables: enough to run tools and reach package
+# registries through a proxy, and no credential. The commands run a loop's code, so ADR-0007 puts
+# them in a sandbox; until slice 5 brings one, `kiln verify --runner local` is for code no agent
+# wrote.
+verifier:
+  environment: [PATH, HOME, TMPDIR, LANG, LC_ALL, HTTPS_PROXY, https_proxy, HTTP_PROXY,
+                http_proxy, NO_PROXY, no_proxy, SSL_CERT_FILE, SSL_CERT_DIR, REQUESTS_CA_BUNDLE,
+                XDG_CACHE_HOME]

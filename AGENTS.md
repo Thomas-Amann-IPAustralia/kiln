@@ -85,7 +85,10 @@ money, and the command refuses to unless a budget Tom set covers it.
 front matter is edited by hand. `uv run kiln gates --root SOLUTION` walks a solution's gates,
 G0 to G5, from its `council/` folder. `uv run kiln scan SCANNER` runs one pinned scanner and
 fails on an open critical, high or unknown finding; CI installs the scanners. `uv run kiln spend`
-shows where each budget stands. All of these are free.
+shows where each budget stands. `uv run kiln verify COMMIT --runner local` is the verifier, the
+only writer of a ticket's pass: it runs a solution's checks and verification steps on clean
+checkouts of a loop's commit, so it runs that commit's code, which belongs in a sandbox (ADR-0007).
+All of these are free.
 
 ## Conventions
 
