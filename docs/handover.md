@@ -3,11 +3,15 @@
 For the next Claude Code session. Read [`CLAUDE.md`](../CLAUDE.md) first. Build only what Tom
 asks for next; nothing that spends money is approved beyond the $2 second-opinion budget.
 
-**Status (2026-11-20):** phase 0. Tom approved the phase 0 sketch (D-010). Slices 1 to 4 of 9
-are built. Slices 1 to 3 (D-011 to D-013) are merged to `main`, in pull requests #3 and #4.
-Slice 4 (D-014) is on branch `ccr-49ba9493-yakuik`, not yet merged; no pull request is open.
-`main` is protected by a ruleset Tom added (ADR-0028); this session cannot read its settings, so
-which checks it requires is unverified.
+**Status (2026-11-22):** phase 0. Tom approved the phase 0 sketch (D-010). Slices 1 to 4 of 9
+are built and merged to `main` (D-011 to D-014), in pull requests #3, #4 and #5. `main` is
+protected by a ruleset Tom added (ADR-0028); this session cannot read its settings, so which
+checks it requires is unverified.
+
+**For a reader who wants the whole picture on one page:**
+[`docs/kiln-explained.html`](kiln-explained.html), a self-contained explainer of what is built,
+what is planned and why, written at `9f9a138` on 2026-11-22. It is a dated snapshot, not a record:
+this note and `CLAUDE.md` stay authoritative, and it is not updated with each slice.
 
 **Next free decision number: D-015**
 
@@ -144,15 +148,8 @@ which checks it requires is unverified.
 
 ## For Tom
 
-Slice 4 is built (D-014). When you are ready, ask for a pull request. It changes the control
-plane, which you review when you merge: a `verifier` section in `config/kiln.yaml`, two new
-entries in `config/dismissals.yaml`, each with its reason, and the scope lines in `CLAUDE.md` and
-`AGENTS.md`.
-
-**`main`'s scanner job will fail on its next run** until this branch is merged, on a new advisory
-against Semgrep's own `mcp` (CVE-2026-115563, published 2026-11-19). This branch dismisses it,
-with the evidence that `semgrep scan` never loads the code concerned. Nothing is needed unless you
-disagree.
+Slice 4 is merged (pull request #5), with its dismissal of CVE-2026-115563, so `main`'s scanner
+job no longer waits on it.
 
 **For the next step.**
 

@@ -18,6 +18,7 @@ agent is built yet.
 | A Claude Code session | [`CLAUDE.md`](CLAUDE.md), then the handover |
 | Any coding agent | [`AGENTS.md`](AGENTS.md) |
 | Anyone asking what Kiln is | [`docs/charter/`](docs/charter/README.md) |
+| Anyone wanting the whole picture on one page | [`docs/kiln-explained.html`](docs/kiln-explained.html), a dated snapshot (22 November 2026) |
 
 ## What the repo holds
 
