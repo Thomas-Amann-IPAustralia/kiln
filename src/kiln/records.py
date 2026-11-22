@@ -4,7 +4,8 @@ The records are how one session hands work to the next (CLAUDE.md, "Records"). E
 guards a way they have gone stale before: a skipped decision number, an ADR missing from its
 index, a handover that names the wrong next number, a seed document changed under its
 snapshot, a link to a file that moved, a decision card edited without re-rendering or
-resting on a file that has since changed, a paid response missing from the spend ledger.
+resting on a file that has since changed, a paid response missing from the spend ledger, an
+eval set whose seed sentence has changed under it.
 """
 
 from __future__ import annotations
@@ -15,7 +16,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from kiln import cards, review, spend
+from kiln import cards, evals, review, spend
 from kiln.config import DEFAULT_CONFIG_PATH, SpendConfig, load_config
 from kiln.errors import KilnError
 
@@ -230,6 +231,15 @@ def check_cards(root: Path) -> list[Problem]:
     ]
 
 
+def check_evals(root: Path) -> list[Problem]:
+    """Eval sets and the baseline protocol: valid, rendered, and still pointing at what they
+    test (`kiln.evals`)."""
+    return [
+        Problem(Path(error.item or evals.GOLDEN_DIR), error.cause)
+        for error in evals.check_evals(root)
+    ]
+
+
 def check_spend(root: Path) -> list[Problem]:
     """The spend ledger is valid and append-only, and every cached paid response has exactly
     one settlement for its cost, against its budget (D-013)."""
@@ -285,6 +295,7 @@ def check_all(root: Path) -> list[Problem]:
         *check_adrs(root),
         *check_seeds(root),
         *check_cards(root),
+        *check_evals(root),
         *check_spend(root),
         *check_links(root),
     ]

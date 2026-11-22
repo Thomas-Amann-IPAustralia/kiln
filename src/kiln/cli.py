@@ -13,6 +13,7 @@ import typer
 from kiln import approvals as approvals_module
 from kiln import cards as cards_module
 from kiln import doctor as doctor_module
+from kiln import evals as evals_module
 from kiln import findings as findings_module
 from kiln import gates as gates_module
 from kiln import records as records_module
@@ -119,15 +120,16 @@ def review(
 def records_render(
     root: Annotated[Path, typer.Option(help="Repo root.")] = Path(),
 ) -> None:
-    """Rewrite each decision card as its canonical rendering, after editing its front matter."""
+    """Rewrite each decision card and eval record as its canonical rendering, after editing its
+    front matter."""
     try:
-        changed = cards_module.render_cards(root)
+        changed = cards_module.render_cards(root) + evals_module.render_evals(root)
     except KilnError as exc:
         raise _fail(exc.one_line()) from exc
     for path in changed:
         typer.echo(f"rendered {path}")
     if not changed:
-        typer.echo("Every card is already its rendering.")
+        typer.echo("Every card and eval record is already its rendering.")
 
 
 @app.command()
@@ -286,7 +288,8 @@ def spend_settle(
 def records_check(
     root: Annotated[Path, typer.Option(help="Repo root.")] = Path(),
 ) -> None:
-    """Check the decision log, the ADRs, the handover, the sealed seeds and the docs' links."""
+    """Check the decision log, the ADRs, the handover, the sealed seeds, the cards, the eval
+    records, the spend ledger and the docs' links."""
     problems = records_module.check_all(root)
     for problem in problems:
         typer.echo(problem.one_line(), err=True)
